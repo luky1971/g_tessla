@@ -1,0 +1,4 @@
+test/
+*.o
+*.out
+.DS_STORE
