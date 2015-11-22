@@ -41,11 +41,48 @@ static void read_traj(const char *traj_fname, rvec ***x, int *nframes, int *nato
 
 
 real tr_tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells, output_env_t *oenv) {
-	rvec **x;
+	rvec **pre_x, **x;
 	int nframes, natoms;
 	struct weighted_grid grid;
 
-	read_traj(traj_fname, &x, &nframes, &natoms, oenv);
+	read_traj(traj_fname, &pre_x, &nframes, &natoms, oenv);
+
+	if(ndx_fname != NULL) {
+		const int NUMGROUPS = 1;
+		int *isize;
+		atom_id **indx;
+		char **grp_names;
+
+		snew(isize, NUMGROUPS);
+		snew(indx, NUMGROUPS);
+		snew(grp_names, NUMGROUPS);
+
+		rd_index(ndx_fname, NUMGROUPS, isize, indx, grp_names);
+		sfree(grp_names);
+
+		natoms = isize[0];
+		sfree(isize);
+
+		snew(x, nframes);
+		for(int i = 0; i < nframes; ++i) {
+			snew(x[i], natoms);
+			for(int j = 0; j < natoms; ++j) {
+				copy_rvec(pre_x[i][indx[0][j]], x[i][j]);
+			}
+		}
+
+		// free memory
+		sfree(indx[0]);
+		sfree(indx);
+
+		for(int i = 0; i < nframes; ++i) {
+			sfree(pre_x[i]);
+		}
+		sfree(pre_x);
+	}
+	else {
+		x = pre_x;
+	}
 
 	construct_grid(x, nframes, natoms, numcells, &grid);
 
