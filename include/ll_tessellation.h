@@ -2,8 +2,8 @@
  * Copyright Ahnaf Siddiqui and Sameer Varma.
  */
 
-#ifndef TRT_TESSELLATION_H
-#define TRT_TESSELLATION_H
+#ifndef LL_TESSELLATION_H
+#define LL_TESSELLATION_H
 
 #ifdef GRO_V5
 #include "pargs.h"
@@ -19,7 +19,7 @@ struct weighted_grid{
 	real minx, miny, minz; // The coordinates of the grid's origin in trajectory space
 };
 
-real tr_tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells, output_env_t *oenv);
+real tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells, output_env_t *oenv);
 /* Calculates the approximate surface area of a trajectory (or part of it specified by the given index file) by tessellating the coordinates in a 3D grid.
  * If ndx_fname is null, the whole trajectory will be included in the grid.
  * numcells is the number of grid cells to be created in the longest dimension.
@@ -36,4 +36,4 @@ void load_grid(rvec **x, int nframes, int natoms, struct weighted_grid *grid);
 
 void free_grid(struct weighted_grid *grid);
 
-#endif // TRT_TESSELLATION_H
+#endif // LL_TESSELLATION_H

@@ -2,7 +2,7 @@
  * Copyright Ahnaf Siddiqui and Sameer Varma.
  */
 
-#include "trt_tessellation.h"
+#include "ll_tessellation.h"
 
 #include <float.h>
 #include <stdio.h>
@@ -40,13 +40,14 @@ static void read_traj(const char *traj_fname, rvec ***x, int *nframes, int *nato
 }
 
 
-real tr_tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells, output_env_t *oenv) {
+real tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells, output_env_t *oenv) {
 	rvec **pre_x, **x;
 	int nframes, natoms;
 	struct weighted_grid grid;
 
 	read_traj(traj_fname, &pre_x, &nframes, &natoms, oenv);
 
+	// Filter trajectory by index file if present
 	if(ndx_fname != NULL) {
 		const int NUMGROUPS = 1;
 		int *isize;
@@ -86,9 +87,11 @@ real tr_tessellate_area(const char *traj_fname, const char *ndx_fname, int numce
 
 	construct_grid(x, nframes, natoms, numcells, &grid);
 
-	// printf("dimx = %d, dimz = %d, dimy = %d\n", grid.dimx, grid.dimz, grid.dimy);
-	// printf("cell width = %f\n", grid.cell_width);
-	// printf("minx = %f, minz = %f, miny = %f\n", grid.minx, grid.minz, grid.miny);
+#ifdef LLT_DEBUG
+	printf("dimx = %d, dimz = %d, dimy = %d\n", grid.dimx, grid.dimz, grid.dimy);
+	printf("cell width = %f\n", grid.cell_width);
+	printf("minx = %f, minz = %f, miny = %f\n", grid.minx, grid.minz, grid.miny);
+#endif
 
 	load_grid(x, nframes, natoms, &grid);
 
@@ -135,7 +138,9 @@ void construct_grid(rvec **x, int nframes, int natoms, int numcells, struct weig
 	grid->dimx = dimx, grid->dimz = dimz, grid->dimy = dimy;
 	grid->cell_width = cell_width;
 	grid->minx = minx, grid->minz = minz, grid->miny = miny;
-	// printf("maxx = %f, maxz = %f, maxy = %f\n", maxx, maxz, maxy);
+#ifdef LLT_DEBUG
+	printf("maxx = %f, maxz = %f, maxy = %f\n", maxx, maxz, maxy);
+#endif
 }
 
 void load_grid(rvec **x, int nframes, int natoms, struct weighted_grid *grid) {
@@ -179,19 +184,14 @@ void load_grid(rvec **x, int nframes, int natoms, struct weighted_grid *grid) {
 		}
 	}
 
+#ifdef LLT_DEBUG
 	for(int i = 0; i < dimx * dimz * dimy; i++) {
 		printf("%f ", *(weights + i));
 	}
 	printf("\n");
+#endif
 }
 
 void free_grid(struct weighted_grid *grid) {
-	// for(int i = 0; i < grid->dimx; ++i) {
-	// 	for(int j = 0; j < grid->dimz; ++j) {
-	// 		sfree(grid->weights[i][j]);
-	// 	}
-	// 	sfree(grid->weights[i]);
-	// }
-	// sfree(grid->weights);
 	sfree(grid->weights);
 }

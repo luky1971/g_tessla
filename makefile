@@ -7,7 +7,11 @@ BUILD=build
 INSTALL=/usr/local/bin
 
 ifeq ($(VGRO),5)
-INCGRO=-I$(GROMACS)/include/ -I$(GROMACS)/include/gromacs/utility -I$(GROMACS)/include/gromacs/fileio -I$(GROMACS)/include/gromacs/commandline -I$(GROMACS)/include/gromacs/legacyheaders
+INCGRO=-I$(GROMACS)/include/ \
+	-I$(GROMACS)/include/gromacs/utility \
+	-I$(GROMACS)/include/gromacs/fileio \
+	-I$(GROMACS)/include/gromacs/commandline \
+	-I$(GROMACS)/include/gromacs/legacyheaders
 LINKGRO=-L$(GROMACS)/lib/i386-linux-gnu
 LIBGRO=-lgromacs
 DEFV5=-D GRO_V5
@@ -19,17 +23,17 @@ endif
 
 .PHONY: install clean
 
-$(BUILD)/tr_tessellator: $(BUILD)/tr_tessellator.o $(BUILD)/trt_tessellation.o
-	$(CC) $(CFLAGS) -o $(BUILD)/tr_tessellator $(BUILD)/tr_tessellator.o $(BUILD)/trt_tessellation.o $(LINKGRO) $(LIBGRO)
+$(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/ll_tessellation.o
+	$(CC) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/ll_tessellation.o $(LINKGRO) $(LIBGRO)
 
-install: $(BUILD)/tr_tessellator
-	install $(BUILD)/tr_tessellator $(INSTALL)
+install: $(BUILD)/lltessellator
+	install $(BUILD)/lltessellator $(INSTALL)
 
-$(BUILD)/tr_tessellator.o: $(SRC)/tr_tessellator.c $(INCLUDE)/trt_tessellation.h
-	$(CC) $(CFLAGS) -o $(BUILD)/tr_tessellator.o -c $(SRC)/tr_tessellator.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
+$(BUILD)/lltessellator.o: $(SRC)/lltessellator.c $(INCLUDE)/ll_tessellation.h
+	$(CC) $(CFLAGS) -o $(BUILD)/lltessellator.o -c $(SRC)/lltessellator.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
 
-$(BUILD)/trt_tessellation.o: $(SRC)/trt_tessellation.c $(INCLUDE)/trt_tessellation.h
-	$(CC) $(CFLAGS) -o $(BUILD)/trt_tessellation.o -c $(SRC)/trt_tessellation.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
+$(BUILD)/ll_tessellation.o: $(SRC)/ll_tessellation.c $(INCLUDE)/ll_tessellation.h
+	$(CC) $(CFLAGS) -o $(BUILD)/ll_tessellation.o -c $(SRC)/ll_tessellation.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
 
 clean:
-	rm -f $(BUILD)/tr_tessellator.o $(BUILD)/tr_tessellator
+	rm -f $(BUILD)/ll_tessellation.o $(BUILD)/lltessellator.o $(BUILD)/lltessellator
