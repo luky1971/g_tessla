@@ -13,8 +13,8 @@
 
 /* Struct for a weighted grid and its associated information */
 struct weighted_grid{
-	real *weights; // Indexed [x][z][y] using pointer arithmetic (y is last index for y-axis maximization performance)
-	int dimx, dimz, dimy; // Number of grid points in each dimension (this is number of grid cells + 1)
+	real *weights; // Indexed [x][y][z] using pointer arithmetic
+	int dimx, dimy, dimz; // Number of grid points in each dimension (this is number of grid cells + 1)
 	real cell_width; // The length of one edge of a grid cell in trajectory space
 	real minx, miny, minz; // The coordinates of the grid's origin in trajectory space
 };

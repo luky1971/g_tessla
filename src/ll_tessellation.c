@@ -9,35 +9,36 @@
 #include "smalloc.h"
 #include "vec.h"
 
-#define FRAMESTEP 500 // The number of new frames by which to reallocate an array of length # trajectory frames
+#include "gkut_io.h"
 
+// #define FRAMESTEP 500 // The number of new frames by which to reallocate an array of length # trajectory frames
 
-static void read_traj(const char *traj_fname, rvec ***x, int *nframes, int *natoms, output_env_t *oenv) {
-	t_trxstatus *status = NULL;
-	real t;
-	matrix box;
-	int est_frames = FRAMESTEP;
-	*nframes = 0;
+// static void read_traj(const char *traj_fname, rvec ***x, int *nframes, int *natoms, output_env_t *oenv) {
+// 	t_trxstatus *status = NULL;
+// 	real t;
+// 	matrix box;
+// 	int est_frames = FRAMESTEP;
+// 	*nframes = 0;
 
-	snew(*x, est_frames);
-	*natoms = read_first_x(*oenv, &status, traj_fname, &t, &((*x)[0]), box);
+// 	snew(*x, est_frames);
+// 	*natoms = read_first_x(*oenv, &status, traj_fname, &t, &((*x)[0]), box);
 
-	do {
-		(*nframes)++;
-		if(*nframes >= est_frames) {
-			est_frames += FRAMESTEP;
-			srenew(*x, est_frames);
-		}
-		snew((*x)[*nframes], *natoms);
-	} while(read_next_x(*oenv, status, &t,
-#ifndef GRO_V5 
-		*natoms,
-#endif
-		(*x)[*nframes], box));
+// 	do {
+// 		(*nframes)++;
+// 		if(*nframes >= est_frames) {
+// 			est_frames += FRAMESTEP;
+// 			srenew(*x, est_frames);
+// 		}
+// 		snew((*x)[*nframes], *natoms);
+// 	} while(read_next_x(*oenv, status, &t,
+// #ifndef GRO_V5 
+// 		*natoms,
+// #endif
+// 		(*x)[*nframes], box));
 
-	sfree((*x)[*nframes]); // Nothing was read to the last allocated frame
-	close_trx(status);
-}
+// 	sfree((*x)[*nframes]); // Nothing was read to the last allocated frame
+// 	close_trx(status);
+// }
 
 
 real tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells, output_env_t *oenv) {
@@ -88,9 +89,10 @@ real tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells
 	construct_grid(x, nframes, natoms, numcells, &grid);
 
 #ifdef LLT_DEBUG
-	printf("dimx = %d, dimz = %d, dimy = %d\n", grid.dimx, grid.dimz, grid.dimy);
+	printf("Grid: \n");
+	printf("dimx = %d, dimy = %d, dimz = %d\n", grid.dimx, grid.dimy, grid.dimz);
 	printf("cell width = %f\n", grid.cell_width);
-	printf("minx = %f, minz = %f, miny = %f\n", grid.minx, grid.minz, grid.miny);
+	printf("minx = %f, miny = %f, minz = %f\n", grid.minx, grid.miny, grid.minz);
 #endif
 
 	load_grid(x, nframes, natoms, &grid);
@@ -112,18 +114,16 @@ void construct_grid(rvec **x, int nframes, int natoms, int numcells, struct weig
 	real distx, disty, distz, cell_width;
 	int dimx, dimz, dimy;
 
-	rvec cur_x;
 	for(int fr = 0; fr < nframes; ++fr) {
 		for(int a = 0; a < natoms; ++a) {
-			copy_rvec(x[fr][a], cur_x);
-			if(cur_x[XX] < minx)	minx = cur_x[XX];
-			if(cur_x[XX] > maxx)	maxx = cur_x[XX];
+			if(x[fr][a][XX] < minx)	minx = x[fr][a][XX];
+			if(x[fr][a][XX] > maxx)	maxx = x[fr][a][XX];
 
-			if(cur_x[YY] < miny)	miny = cur_x[YY];
-			if(cur_x[YY] > maxy)	maxy = cur_x[YY];
+			if(x[fr][a][YY] < miny)	miny = x[fr][a][YY];
+			if(x[fr][a][YY] > maxy)	maxy = x[fr][a][YY];
 
-			if(cur_x[ZZ] < minz)	minz = cur_x[ZZ];
-			if(cur_x[ZZ] > maxz)	maxz = cur_x[ZZ];
+			if(x[fr][a][ZZ] < minz)	minz = x[fr][a][ZZ];
+			if(x[fr][a][ZZ] > maxz)	maxz = x[fr][a][ZZ];
 		}
 	}
 
@@ -134,58 +134,58 @@ void construct_grid(rvec **x, int nframes, int natoms, int numcells, struct weig
 	// # weights in each dim is the # grid cells - 1 + an extra grid cell (bc of int cast floor) + 1 for the last grid point
 	dimx = ((int)(distx/cell_width) + 2), dimz = ((int)(distz/cell_width) + 2), dimy = ((int)(disty/cell_width) + 2);
 
-	snew(grid->weights, dimx * dimz * dimy);
-	grid->dimx = dimx, grid->dimz = dimz, grid->dimy = dimy;
+	snew(grid->weights, dimx * dimy * dimz);
+	grid->dimx = dimx, grid->dimy = dimy, grid->dimz = dimz;
 	grid->cell_width = cell_width;
-	grid->minx = minx, grid->minz = minz, grid->miny = miny;
+	grid->minx = minx, grid->miny = miny, grid->minz = minz;
 #ifdef LLT_DEBUG
-	printf("maxx = %f, maxz = %f, maxy = %f\n", maxx, maxz, maxy);
+	printf("maxx = %f, maxy = %f, maxz = %f\n", maxx, maxy, maxz);
 #endif
 }
 
 void load_grid(rvec **x, int nframes, int natoms, struct weighted_grid *grid) {
 	real *weights = grid->weights;
-	int dimx = grid->dimx, dimz = grid->dimz, dimy = grid->dimy;
+	int dimx = grid->dimx, dimy = grid->dimy, dimz = grid->dimz;
 	real cell_width = grid->cell_width;
 	real minx = grid->minx, miny = grid->miny, minz = grid->minz;
 
 	real diag_sq = 3 * cell_width * cell_width;
-	rvec cur_x, grid_point;
+	rvec grid_point;
 	int xi, yi, zi;
+	int dimyz = dimy * dimz;
 
 	for(int fr = 0; fr < nframes; ++fr) {
 		for(int a = 0; a < natoms; ++a) {
-			copy_rvec(x[fr][a], cur_x);
-
 			// Indices of the origin point of the grid cell surrounding this atom
-			xi = (int)((cur_x[XX] - minx)/cell_width);
-			yi = (int)((cur_x[YY] - miny)/cell_width);
-			zi = (int)((cur_x[ZZ] - minz)/cell_width);
+			xi = (int)((x[fr][a][XX] - minx)/cell_width);
+			yi = (int)((x[fr][a][YY] - miny)/cell_width);
+			zi = (int)((x[fr][a][ZZ] - minz)/cell_width);
 
 			// Load the eight grid points around this atom. Closer distance to atom = higher weight
 			grid_point[XX] = minx + xi * cell_width, 
 				grid_point[YY] = miny + yi * cell_width, 
 				grid_point[ZZ] = minz + zi * cell_width;
-			*(weights + xi * dimz * dimy + zi * dimy + yi) += diag_sq - distance2(cur_x, grid_point);
+			*(weights + xi * dimyz + yi * dimz + zi) += diag_sq - distance2(x[fr][a], grid_point);
 			grid_point[XX] += cell_width;
-			*(weights + (xi+1) * dimz * dimy + zi * dimy + yi) += diag_sq - distance2(cur_x, grid_point);
-			grid_point[ZZ] += cell_width;
-			*(weights + (xi+1) * dimz * dimy + (zi+1) * dimy + yi) += diag_sq - distance2(cur_x, grid_point);
-			grid_point[XX] -= cell_width;
-			*(weights + xi * dimz * dimy + (zi+1) * dimy + yi) += diag_sq - distance2(cur_x, grid_point);
+			*(weights + (xi+1) * dimyz + yi * dimz + zi) += diag_sq - distance2(x[fr][a], grid_point);
 			grid_point[YY] += cell_width;
-			*(weights + xi * dimz * dimy + (zi+1) * dimy + yi+1) += diag_sq - distance2(cur_x, grid_point);
-			grid_point[ZZ] -= cell_width;
-			*(weights + xi * dimz * dimy + zi * dimy + yi+1) += diag_sq - distance2(cur_x, grid_point);
-			grid_point[XX] += cell_width;
-			*(weights + (xi+1) * dimz * dimy + zi * dimy + yi+1) += diag_sq - distance2(cur_x, grid_point);
+			*(weights + (xi+1) * dimyz + (yi+1) * dimz + zi) += diag_sq - distance2(x[fr][a], grid_point);
+			grid_point[XX] -= cell_width;
+			*(weights + xi * dimyz + (yi+1) * dimz + zi) += diag_sq - distance2(x[fr][a], grid_point);
 			grid_point[ZZ] += cell_width;
-			*(weights + (xi+1) * dimz * dimy + (zi+1) * dimy + yi+1) += diag_sq - distance2(cur_x, grid_point);
+			*(weights + xi * dimyz + (yi+1) * dimz + zi+1) += diag_sq - distance2(x[fr][a], grid_point);
+			grid_point[YY] -= cell_width;
+			*(weights + xi * dimyz + yi * dimz + zi+1) += diag_sq - distance2(x[fr][a], grid_point);
+			grid_point[XX] += cell_width;
+			*(weights + (xi+1) * dimyz + yi * dimz + zi+1) += diag_sq - distance2(x[fr][a], grid_point);
+			grid_point[YY] += cell_width;
+			*(weights + (xi+1) * dimyz + (yi+1) * dimz + zi+1) += diag_sq - distance2(x[fr][a], grid_point);
 		}
 	}
 
 #ifdef LLT_DEBUG
-	for(int i = 0; i < dimx * dimz * dimy; i++) {
+	printf("Weights: \n");
+	for(int i = 0; i < dimx * dimyz; i++) {
 		printf("%f ", *(weights + i));
 	}
 	printf("\n");

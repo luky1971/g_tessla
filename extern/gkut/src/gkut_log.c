@@ -1,0 +1,55 @@
+/*
+ * Copyright Ahnaf Siddiqui
+ */
+
+#include "gkut_log.h"
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <time.h>
+#ifdef GRO_V5
+#include "fatalerror.h"
+#else
+#include "gmx_fatal.h"
+#endif
+
+static FILE *out_log = NULL;
+
+void init_log(const char *logfile, const char *program) {
+	out_log = fopen(logfile, "a");
+	
+	time_t t = time(NULL);
+	struct tm *ltime = localtime(&t);
+	fprintf(out_log, "\n%s run: %d-%d-%d %d:%d:%d\n", 
+		program, ltime->tm_mon + 1, ltime->tm_mday, ltime->tm_year + 1900, 
+		ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
+}
+
+void close_log() {
+	fclose(out_log);
+}
+
+void print_log(char const *fmt, ...) {
+	va_list arg;
+	va_start(arg, fmt);
+	vprintf(fmt, arg);
+	va_end(arg);
+	if(out_log != NULL) {
+		va_start(arg, fmt);
+		vfprintf(out_log, fmt, arg);
+		va_end(arg);
+	}
+}
+
+void log_fatal(int fatal_errno, const char *file, int line, char const *fmt, ...) {
+	va_list arg;
+	if(out_log != NULL) {
+		va_start(arg, fmt);
+		fprintf(out_log, "Fatal error in source file %s line %d: ", file, line);
+		vfprintf(out_log, fmt, arg);
+		va_end(arg);
+	}
+	va_start(arg, fmt);
+	gmx_fatal(fatal_errno, file, line, fmt, arg);
+	va_end(arg);
+}

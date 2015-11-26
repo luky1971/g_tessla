@@ -1,6 +1,7 @@
 CC=gcc
 GROMACS=/usr/local/gromacs
 VGRO=5
+GKUT=extern/gkut
 INCLUDE=include
 SRC=src
 BUILD=build
@@ -24,7 +25,7 @@ endif
 .PHONY: install clean
 
 $(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/ll_tessellation.o
-	$(CC) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/ll_tessellation.o $(LINKGRO) $(LIBGRO)
+	make VGRO=$(VGRO) -C $(GKUT) && $(CC) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/ll_tessellation.o $(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(LINKGRO) $(LIBGRO)
 
 install: $(BUILD)/lltessellator
 	install $(BUILD)/lltessellator $(INSTALL)
@@ -33,7 +34,7 @@ $(BUILD)/lltessellator.o: $(SRC)/lltessellator.c $(INCLUDE)/ll_tessellation.h
 	$(CC) $(CFLAGS) -o $(BUILD)/lltessellator.o -c $(SRC)/lltessellator.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
 
 $(BUILD)/ll_tessellation.o: $(SRC)/ll_tessellation.c $(INCLUDE)/ll_tessellation.h
-	$(CC) $(CFLAGS) -o $(BUILD)/ll_tessellation.o -c $(SRC)/ll_tessellation.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
+	$(CC) $(CFLAGS) -o $(BUILD)/ll_tessellation.o -c $(SRC)/ll_tessellation.c $(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include
 
 clean:
-	rm -f $(BUILD)/ll_tessellation.o $(BUILD)/lltessellator.o $(BUILD)/lltessellator
+	make clean -C $(GKUT) && rm -f $(BUILD)/*.o $(BUILD)/lltessellator
