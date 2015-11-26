@@ -10,36 +10,7 @@
 #include "vec.h"
 
 #include "gkut_io.h"
-
-// #define FRAMESTEP 500 // The number of new frames by which to reallocate an array of length # trajectory frames
-
-// static void read_traj(const char *traj_fname, rvec ***x, int *nframes, int *natoms, output_env_t *oenv) {
-// 	t_trxstatus *status = NULL;
-// 	real t;
-// 	matrix box;
-// 	int est_frames = FRAMESTEP;
-// 	*nframes = 0;
-
-// 	snew(*x, est_frames);
-// 	*natoms = read_first_x(*oenv, &status, traj_fname, &t, &((*x)[0]), box);
-
-// 	do {
-// 		(*nframes)++;
-// 		if(*nframes >= est_frames) {
-// 			est_frames += FRAMESTEP;
-// 			srenew(*x, est_frames);
-// 		}
-// 		snew((*x)[*nframes], *natoms);
-// 	} while(read_next_x(*oenv, status, &t,
-// #ifndef GRO_V5 
-// 		*natoms,
-// #endif
-// 		(*x)[*nframes], box));
-
-// 	sfree((*x)[*nframes]); // Nothing was read to the last allocated frame
-// 	close_trx(status);
-// }
-
+#include "gkut_log.h"
 
 real tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells, output_env_t *oenv) {
 	rvec **pre_x, **x;
@@ -89,10 +60,10 @@ real tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells
 	construct_grid(x, nframes, natoms, numcells, &grid);
 
 #ifdef LLT_DEBUG
-	printf("Grid: \n");
-	printf("dimx = %d, dimy = %d, dimz = %d\n", grid.dimx, grid.dimy, grid.dimz);
-	printf("cell width = %f\n", grid.cell_width);
-	printf("minx = %f, miny = %f, minz = %f\n", grid.minx, grid.miny, grid.minz);
+	print_log("Grid: \n");
+	print_log("dimx = %d, dimy = %d, dimz = %d\n", grid.dimx, grid.dimy, grid.dimz);
+	print_log("cell width = %f\n", grid.cell_width);
+	print_log("minx = %f, miny = %f, minz = %f\n", grid.minx, grid.miny, grid.minz);
 #endif
 
 	load_grid(x, nframes, natoms, &grid);
@@ -139,7 +110,7 @@ void construct_grid(rvec **x, int nframes, int natoms, int numcells, struct weig
 	grid->cell_width = cell_width;
 	grid->minx = minx, grid->miny = miny, grid->minz = minz;
 #ifdef LLT_DEBUG
-	printf("maxx = %f, maxy = %f, maxz = %f\n", maxx, maxy, maxz);
+	print_log("maxx = %f, maxy = %f, maxz = %f\n", maxx, maxy, maxz);
 #endif
 }
 
@@ -184,11 +155,11 @@ void load_grid(rvec **x, int nframes, int natoms, struct weighted_grid *grid) {
 	}
 
 #ifdef LLT_DEBUG
-	printf("Weights: \n");
+	print_log("Weights: \n");
 	for(int i = 0; i < dimx * dimyz; i++) {
-		printf("%f ", *(weights + i));
+		print_log("%f ", *(weights + i));
 	}
-	printf("\n");
+	print_log("\n");
 #endif
 }
 

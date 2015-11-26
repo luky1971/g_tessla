@@ -4,6 +4,8 @@
 
 #include "macros.h"
 
+#include "gkut_log.h"
+
 #include "ll_tessellation.h"
 
 enum {efT_TRAJ, efT_NDX, efT_NUMFILES};
@@ -16,6 +18,8 @@ int main(int argc, char *argv[]) {
 	const char *fnames[efT_NUMFILES];
 	output_env_t oenv = NULL;
 	int numcells = 50; // number of grid cells to be created in the longest dimension
+
+	init_log("llt.log", argv[0]);
 
 	t_filenm fnm[] = {
 		{efTRX, "-f", "traj.xtc", ffREAD},
@@ -32,6 +36,9 @@ int main(int argc, char *argv[]) {
 	fnames[efT_NDX] = opt2fn_null("-n", efT_NUMFILES, fnm);
 
 	tessellate_area(fnames[efT_TRAJ], fnames[efT_NDX], numcells, &oenv);
+
+	print_log("Done.\n");
+	close_log();
 
 	return 0;
 }

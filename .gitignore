@@ -1,4 +1,5 @@
 test/
 *.o
 *.out
+*.log
 .DS_STORE

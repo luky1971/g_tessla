@@ -31,7 +31,7 @@ install: $(BUILD)/lltessellator
 	install $(BUILD)/lltessellator $(INSTALL)
 
 $(BUILD)/lltessellator.o: $(SRC)/lltessellator.c $(INCLUDE)/ll_tessellation.h
-	$(CC) $(CFLAGS) -o $(BUILD)/lltessellator.o -c $(SRC)/lltessellator.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
+	$(CC) $(CFLAGS) -o $(BUILD)/lltessellator.o -c $(SRC)/lltessellator.c $(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include
 
 $(BUILD)/ll_tessellation.o: $(SRC)/ll_tessellation.c $(INCLUDE)/ll_tessellation.h
 	$(CC) $(CFLAGS) -o $(BUILD)/ll_tessellation.o -c $(SRC)/ll_tessellation.c $(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include
