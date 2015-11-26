@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 	};
 	const char *fnames[efT_NUMFILES];
 	output_env_t oenv = NULL;
-	int numcells = 50; // number of grid cells to be created in the longest dimension
+	real cell_width = 0.1;
 
 	init_log("llt.log", argv[0]);
 
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 	};
 
 	t_pargs pa[] = {
-		{"-ncells", FALSE, etINT, {&numcells}, "number of grid cells to be created in the longest dimension"}
+		{"-width", FALSE, etREAL, {&cell_width}, "width of each grid cell."}
 	};
 
 	parse_common_args(&argc, argv, 0, efT_NUMFILES, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 	fnames[efT_TRAJ] = opt2fn("-f", efT_NUMFILES, fnm);
 	fnames[efT_NDX] = opt2fn_null("-n", efT_NUMFILES, fnm);
 
-	tessellate_area(fnames[efT_TRAJ], fnames[efT_NDX], numcells, &oenv);
+	tessellate_area(fnames[efT_TRAJ], fnames[efT_NDX], cell_width, &oenv);
 
 	print_log("Done.\n");
 	close_log();

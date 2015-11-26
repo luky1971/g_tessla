@@ -12,10 +12,9 @@
 #include "gkut_io.h"
 #include "gkut_log.h"
 
-real tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells, output_env_t *oenv) {
+real tessellate_area(const char *traj_fname, const char *ndx_fname, real cell_width, output_env_t *oenv) {
 	rvec **pre_x, **x;
 	int nframes, natoms;
-	struct weighted_grid grid;
 
 	read_traj(traj_fname, &pre_x, &nframes, &natoms, oenv);
 
@@ -57,7 +56,21 @@ real tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells
 		x = pre_x;
 	}
 
-	construct_grid(x, nframes, natoms, numcells, &grid);
+	f_tessellate_area(x, nframes, natoms, cell_width);
+
+	// free memory
+	for(int i = 0; i < nframes; ++i) {
+		sfree(x[i]);
+	}
+	sfree(x);
+
+	return 0;
+}
+
+real f_tessellate_area(rvec **x, int nframes, int natoms, real cell_width) {
+	struct weighted_grid grid;
+
+	construct_grid(x, nframes, natoms, cell_width, &grid);
 
 #ifdef LLT_DEBUG
 	print_log("Grid: \n");
@@ -70,20 +83,12 @@ real tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells
 
 	// free memory
 	free_grid(&grid);
-
-	for(int i = 0; i < nframes; ++i) {
-		sfree(x[i]);
-	}
-	sfree(x);
-
-	return 0;
 }
 
-void construct_grid(rvec **x, int nframes, int natoms, int numcells, struct weighted_grid *grid) {
+void construct_grid(rvec **x, int nframes, int natoms, real cell_width, struct weighted_grid *grid) {
 	real minx = FLT_MAX, miny = FLT_MAX, minz = FLT_MAX, 
 		maxx = FLT_MIN, maxy = FLT_MIN, maxz = FLT_MIN;
-	real distx, disty, distz, cell_width;
-	int dimx, dimz, dimy;
+	int dimx, dimy, dimz;
 
 	for(int fr = 0; fr < nframes; ++fr) {
 		for(int a = 0; a < natoms; ++a) {
@@ -98,12 +103,10 @@ void construct_grid(rvec **x, int nframes, int natoms, int numcells, struct weig
 		}
 	}
 
-	distx = maxx - minx, disty = maxy - miny, distz = maxz - minz;
-	real distb;
-	cell_width = (distx > (distb = disty > distz ? disty : distz) ? distx : distb) / numcells;
-
 	// # weights in each dim is the # grid cells - 1 + an extra grid cell (bc of int cast floor) + 1 for the last grid point
-	dimx = ((int)(distx/cell_width) + 2), dimz = ((int)(distz/cell_width) + 2), dimy = ((int)(disty/cell_width) + 2);
+	dimx = ((int)((maxx - minx)/cell_width) + 2);
+	dimy = ((int)((maxy - miny)/cell_width) + 2);
+	dimz = ((int)((maxz - minz)/cell_width) + 2);
 
 	snew(grid->weights, dimx * dimy * dimz);
 	grid->dimx = dimx, grid->dimy = dimy, grid->dimz = dimz;

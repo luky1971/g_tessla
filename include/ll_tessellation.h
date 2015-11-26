@@ -19,15 +19,19 @@ struct weighted_grid{
 	real minx, miny, minz; // The coordinates of the grid's origin in trajectory space
 };
 
-real tessellate_area(const char *traj_fname, const char *ndx_fname, int numcells, output_env_t *oenv);
-/* Calculates the approximate surface area of a trajectory (or part of it specified by the given index file) by tessellating the coordinates in a 3D grid.
+real tessellate_area(const char *traj_fname, const char *ndx_fname, real cell_width, output_env_t *oenv);
+/* Reads a trajectory file and then calculates approximate surface area (see the tessellate_area function below).
  * If ndx_fname is null, the whole trajectory will be included in the grid.
- * numcells is the number of grid cells to be created in the longest dimension.
- * Ideally, numcells should be lower than the number of trajectory points in the longest dimension.  
+ */
+
+real f_tessellate_area(rvec **x, int nframes, int natoms, real cell_width);
+/* Calculates the approximate surface area of a trajectory by tessellating the coordinates in a 3D grid.
+ * Call this if you have already read the trajectory.
+ * cell_width is the width of each grid cell. It should be high enough so that there's no empty grid cells.
  * The approximated surface area is returned.
  */
 
-void construct_grid(rvec **x, int nframes, int natoms, int numcells, struct weighted_grid *grid);
+void construct_grid(rvec **x, int nframes, int natoms, real cell_width, struct weighted_grid *grid);
 /* Memory is allocated for weights in grid and initialized to 0.
  * Call free_grid when done with grid.
  */
