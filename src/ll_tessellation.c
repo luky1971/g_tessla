@@ -12,8 +12,19 @@
 #include "gkut_io.h"
 #include "gkut_log.h"
 
+static real llt_diag, llt_diag2;
 
-void llt_area(const char *traj_fname, const char *ndx_fname, real cell_width, output_env_t *oenv, struct tessellated_grid *grid) {
+real weight_dist(rvec a, rvec b) {
+	return llt_diag - sqrt(distance2(a, b));
+}
+
+real weight_dist2(rvec a, rvec b) {
+	return llt_diag2 - distance2(a, b);
+}
+
+
+void llt_area(const char *traj_fname, const char *ndx_fname, 
+	real cell_width, real (*fweight)(rvec, rvec), output_env_t *oenv, struct tessellated_grid *grid) {
 	rvec **pre_x, **x;
 	int nframes, natoms;
 
@@ -57,7 +68,7 @@ void llt_area(const char *traj_fname, const char *ndx_fname, real cell_width, ou
 		x = pre_x;
 	}
 
-	f_llt_area(x, nframes, natoms, cell_width, grid);
+	f_llt_area(x, nframes, natoms, cell_width, fweight, grid);
 
 	// free memory
 	for(int i = 0; i < nframes; ++i) {
@@ -67,10 +78,11 @@ void llt_area(const char *traj_fname, const char *ndx_fname, real cell_width, ou
 }
 
 
-void f_llt_area(rvec **x, int nframes, int natoms, real cell_width, struct tessellated_grid *grid) {
+void f_llt_area(rvec **x, int nframes, int natoms, 
+	real cell_width, real (*fweight)(rvec, rvec), struct tessellated_grid *grid) {
 	construct_grid(x, nframes, natoms, cell_width, grid);
 
-	load_grid(x, nframes, natoms, grid);
+	load_grid(x, nframes, natoms, fweight, grid);
 
 	gen_heightmap(grid);
 
@@ -113,14 +125,15 @@ void construct_grid(rvec **x, int nframes, int natoms, real cell_width, struct t
 }
 
 
-void load_grid(rvec **x, int nframes, int natoms, struct tessellated_grid *grid) {
+void load_grid(rvec **x, int nframes, int natoms, real (*fweight)(rvec, rvec), struct tessellated_grid *grid) {
 	real *weights = grid->weights;
 	int dimx = grid->dimx, dimy = grid->dimy, dimz = grid->dimz;
 	int dimyz = dimy * dimz;
 	real cell_width = grid->cell_width;
 	real minx = grid->minx, miny = grid->miny, minz = grid->minz;
 
-	real diag_sq = 3 * cell_width * cell_width;
+	llt_diag2 = 3 * grid->cell_width * grid->cell_width;
+	llt_diag = sqrt(llt_diag2);
 
 	rvec grid_point;
 	int xi, yi, zi;
@@ -137,25 +150,25 @@ void load_grid(rvec **x, int nframes, int natoms, struct tessellated_grid *grid)
 			grid_point[YY] = miny + yi * cell_width; 
 			grid_point[ZZ] = minz + zi * cell_width;
 			// This order of operations is an attempt to minimize cache misses
-			weights[xi*dimyz + yi*dimz + zi] 			+= diag_sq - distance2(x[fr][a], grid_point);
+			weights[xi*dimyz + yi*dimz + zi] 			+= fweight(x[fr][a], grid_point);
 			grid_point[ZZ] += cell_width;
-			weights[xi*dimyz + yi*dimz + zi+1] 			+= diag_sq - distance2(x[fr][a], grid_point);
+			weights[xi*dimyz + yi*dimz + zi+1] 			+= fweight(x[fr][a], grid_point);
 			grid_point[YY] += cell_width;
 			grid_point[ZZ] -= cell_width;
-			weights[xi*dimyz + (yi+1)*dimz + zi] 		+= diag_sq - distance2(x[fr][a], grid_point);
+			weights[xi*dimyz + (yi+1)*dimz + zi] 		+= fweight(x[fr][a], grid_point);
 			grid_point[ZZ] += cell_width;
-			weights[xi*dimyz + (yi+1)*dimz + zi+1] 		+= diag_sq - distance2(x[fr][a], grid_point);
+			weights[xi*dimyz + (yi+1)*dimz + zi+1] 		+= fweight(x[fr][a], grid_point);
 			grid_point[XX] += cell_width;
 			grid_point[YY] -= cell_width;
 			grid_point[ZZ] -= cell_width;
-			weights[(xi+1)*dimyz + yi*dimz + zi] 		+= diag_sq - distance2(x[fr][a], grid_point);
+			weights[(xi+1)*dimyz + yi*dimz + zi] 		+= fweight(x[fr][a], grid_point);
 			grid_point[ZZ] += cell_width;
-			weights[(xi+1)*dimyz + yi*dimz + zi+1] 		+= diag_sq - distance2(x[fr][a], grid_point);
+			weights[(xi+1)*dimyz + yi*dimz + zi+1] 		+= fweight(x[fr][a], grid_point);
 			grid_point[YY] += cell_width;
 			grid_point[ZZ] -= cell_width;
-			weights[(xi+1)*dimyz + (yi+1)*dimz + zi] 	+= diag_sq - distance2(x[fr][a], grid_point);
+			weights[(xi+1)*dimyz + (yi+1)*dimz + zi] 	+= fweight(x[fr][a], grid_point);
 			grid_point[ZZ] += cell_width;
-			weights[(xi+1)*dimyz + (yi+1)*dimz + zi+1] 	+= diag_sq - distance2(x[fr][a], grid_point);
+			weights[(xi+1)*dimyz + (yi+1)*dimz + zi+1] 	+= fweight(x[fr][a], grid_point);
 		}
 	}
 }

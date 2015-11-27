@@ -5,6 +5,7 @@
 #ifndef LL_TESSELLATION_H
 #define LL_TESSELLATION_H
 
+#include "vec.h"
 #ifdef GRO_V5
 #include "pargs.h"
 #else
@@ -23,16 +24,34 @@ struct tessellated_grid{
 	real surface_area; // The total triangulated/mesh surface area of the grid's heightmap
 };
 
-void llt_area(const char *traj_fname, const char *ndx_fname, real cell_width, output_env_t *oenv, struct tessellated_grid *grid);
+
+/* Weight functions */
+
+real weight_dist(rvec a, rvec b);
+/* Assigns weight based on distance between a and b. Closer distance = higher weight.
+ */
+
+real weight_dist2(rvec a, rvec b);
+/* Assigns weight based on distance squared between a and b. Closer distance squared = higher weight.
+ */
+
+/***/
+
+
+void llt_area(const char *traj_fname, const char *ndx_fname, 
+	real cell_width, real (*fweight)(rvec, rvec), output_env_t *oenv, struct tessellated_grid *grid);
 /* Reads a trajectory file and then calculates approximate surface area (see the f_llt_area function below).
  * If ndx_fname is not null, only a selection within the trajectory will be included in the grid.
  */
 
-void f_llt_area(rvec **x, int nframes, int natoms, real cell_width, struct tessellated_grid *grid);
+void f_llt_area(rvec **x, int nframes, int natoms, 
+	real cell_width, real (*fweight)(rvec, rvec), struct tessellated_grid *grid);
 /* Calculates the approximate surface area of a trajectory by tessellating the coordinates in a 3D grid.
  * Stores grid and area information in tessellated_grid *grid.
  * Call this if you have already read the trajectory (otherwise call llt_area above).
- * cell_width is the width of each grid cell. It should be high enough so that there's no empty grid cells inside the system of interest.
+ * cell_width is the width of each grid cell. It should be high enough so that there's no gaps (empty cells) within the system of interest.
+ * fweight is the function that will be used for calculating the weight of each grid point - trajectory point pair.
+ * You can use one of the weight functions above for fweight.
  * Memory is allocated for arrays in grid. Call free_grid when done.
  */
 
@@ -43,7 +62,11 @@ void construct_grid(rvec **x, int nframes, int natoms, real cell_width, struct t
 
 /* construct_grid must be called prior to calling the following functions */
 
-void load_grid(rvec **x, int nframes, int natoms, struct tessellated_grid *grid);
+void load_grid(rvec **x, int nframes, int natoms, real (*fweight)(rvec, rvec), struct tessellated_grid *grid);
+/* Loads the given grid with weights based on the given trajectory.
+ * Uses fweight to calculate the weight of each grid point - trajectory point pair.
+ * You can use one of the weight functions above for fweight.
+ */
 
 void gen_heightmap(struct tessellated_grid *grid);
 

@@ -18,6 +18,8 @@ int main(int argc, char *argv[]) {
 	const char *fnames[efT_NUMFILES];
 	output_env_t oenv = NULL;
 	real cell_width = 0.1;
+	real (*fweight)(rvec, rvec) = weight_dist2;
+	gmx_bool linear = FALSE;
 
 	struct tessellated_grid grid;
 
@@ -30,7 +32,8 @@ int main(int argc, char *argv[]) {
 	};
 
 	t_pargs pa[] = {
-		{"-width", FALSE, etREAL, {&cell_width}, "width of each grid cell."}
+		{"-width", FALSE, etREAL, {&cell_width}, "width of each grid cell"},
+		{"-lin", FALSE, etBOOL, {&linear}, "set this to use distance instead of distance squared for weighing"}
 	};
 
 	parse_common_args(&argc, argv, 0, efT_NUMFILES, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
@@ -39,7 +42,9 @@ int main(int argc, char *argv[]) {
 	fnames[efT_NDX] = opt2fn_null("-n", efT_NUMFILES, fnm);
 	fnames[efT_OUTDAT] = opt2fn("-o", efT_NUMFILES, fnm);
 
-	llt_area(fnames[efT_TRAJ], fnames[efT_NDX], cell_width, &oenv, &grid);
+	if(linear)	fweight = weight_dist;
+
+	llt_area(fnames[efT_TRAJ], fnames[efT_NDX], cell_width, fweight, &oenv, &grid);
 
 	if(grid.num_empty > 0) {
 		print_log("\n\nWARNING: %d grid cell(s) have empty corner(s).\n"
