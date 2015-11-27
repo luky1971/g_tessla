@@ -8,7 +8,7 @@
 
 #include "ll_tessellation.h"
 
-enum {efT_TRAJ, efT_NDX, efT_NUMFILES};
+enum {efT_TRAJ, efT_NDX, efT_OUTDAT, efT_NUMFILES};
 
 int main(int argc, char *argv[]) {
 	const char *desc[] = {
@@ -19,11 +19,14 @@ int main(int argc, char *argv[]) {
 	output_env_t oenv = NULL;
 	real cell_width = 0.1;
 
+	struct tessellated_grid grid;
+
 	init_log("llt.log", argv[0]);
 
 	t_filenm fnm[] = {
 		{efTRX, "-f", "traj.xtc", ffREAD},
-		{efNDX, "-n", "index.ndx", ffOPTRD}
+		{efNDX, "-n", "index.ndx", ffOPTRD},
+		{efDAT, "-o", "grid.dat", ffWRITE}
 	};
 
 	t_pargs pa[] = {
@@ -34,10 +37,21 @@ int main(int argc, char *argv[]) {
 
 	fnames[efT_TRAJ] = opt2fn("-f", efT_NUMFILES, fnm);
 	fnames[efT_NDX] = opt2fn_null("-n", efT_NUMFILES, fnm);
+	fnames[efT_OUTDAT] = opt2fn("-o", efT_NUMFILES, fnm);
 
-	tessellate_area(fnames[efT_TRAJ], fnames[efT_NDX], cell_width, &oenv);
+	llt_area(fnames[efT_TRAJ], fnames[efT_NDX], cell_width, &oenv, &grid);
 
-	print_log("Done.\n");
+	if(grid.num_empty > 0) {
+		print_log("\n\nWARNING: %d grid cell(s) have empty corner(s).\n"
+			"If there are gaps in your system's area of the grid, increase grid spacing with the -width option.\n"
+			"The current width is %f.\n", grid.num_empty, grid.cell_width);
+	}
+
+	print_grid(&grid, fnames[efT_OUTDAT]);
+
+	print_log("Tessellation data saved to %s\n", fnames[efT_OUTDAT]);
+	print_log("Tessellated surface area: %f\n", grid.surface_area);
+
 	close_log();
 
 	return 0;
