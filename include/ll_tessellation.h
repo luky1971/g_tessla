@@ -22,6 +22,7 @@ struct tessellated_grid{
 	real minx, miny, minz; // The coordinates of the grid's origin in trajectory space
 	int num_empty; // The number of grid cells that have zero-weight corner(s) (and are therefore excluded from tessellation)
 	real surface_area; // The total triangulated/mesh surface area of the grid's heightmap
+	real area_per_particle; // The mesh surface area per trajectory particle
 };
 
 
@@ -51,7 +52,7 @@ void f_llt_area(rvec **x, int nframes, int natoms,
  * Call this if you have already read the trajectory (otherwise call llt_area above).
  * cell_width is the width of each grid cell. It should be high enough so that there's no gaps (empty cells) within the system of interest.
  * fweight is the function that will be used for calculating the weight of each grid point - trajectory point pair.
- * You can use one of the weight functions above for fweight.
+ * You can use one of the weight functions above for fweight or your own weight function.
  * Memory is allocated for arrays in grid. Call free_grid when done.
  */
 

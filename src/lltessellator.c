@@ -55,7 +55,9 @@ int main(int argc, char *argv[]) {
 	print_grid(&grid, fnames[efT_OUTDAT]);
 
 	print_log("Tessellation data saved to %s\n", fnames[efT_OUTDAT]);
-	print_log("Tessellated surface area: %f\n", grid.surface_area);
+	print_log("Tessellated surface area per particle: %f\n", grid.area_per_particle);
+
+	free_grid(&grid);
 
 	close_log();
 

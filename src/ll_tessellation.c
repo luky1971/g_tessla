@@ -87,6 +87,8 @@ void f_llt_area(rvec **x, int nframes, int natoms,
 	gen_heightmap(grid);
 
 	tessellate_area(grid);
+
+	grid->area_per_particle = grid->surface_area / natoms;
 }
 
 
@@ -132,7 +134,7 @@ void load_grid(rvec **x, int nframes, int natoms, real (*fweight)(rvec, rvec), s
 	real cell_width = grid->cell_width;
 	real minx = grid->minx, miny = grid->miny, minz = grid->minz;
 
-	llt_diag2 = 3 * grid->cell_width * grid->cell_width;
+	llt_diag2 = 3 * cell_width * cell_width;
 	llt_diag = sqrt(llt_diag2);
 
 	rvec grid_point;
@@ -187,8 +189,8 @@ void gen_heightmap(struct tessellated_grid *grid) {
 
 	for(int x = 0; x < dimx; ++x) {
 		for(int y = 0; y < dimy; ++y) {
-			maxz = -1; // If none of the weights in this column is > 0, then this column's z index will be -1 
-			max_weight = 2 * FLT_EPSILON; // To protect the -1 index in case of floating point imprecision
+			maxz = -1; // If none of the weights in this column is > ~0, then this column's z index will be -1 
+			max_weight = 2 * FLT_EPSILON; // To protect the criterion above in case of floating point imprecision
 			for(int z = 0; z < dimz; ++z) {
 				if(weights[x*dimyz + y*dimz + z] > max_weight) {
 					max_weight = weights[x*dimyz + y*dimz + z];
@@ -299,7 +301,8 @@ void print_grid(struct tessellated_grid *grid, const char *fname) {
 	}
 
 	fprintf(f, "\n%d grid cell(s) have empty (zero-weight) corner(s) and are excluded from tessellation.\n", grid->num_empty);
-	fprintf(f, "Tessellated surface area: %f\n", grid->surface_area);
+	fprintf(f, "Total tessellated surface area: %f\n", grid->surface_area);
+	fprintf(f, "Tessellated surface area per particle: %f\n", grid->area_per_particle);
 
 	fclose(f);
 }
