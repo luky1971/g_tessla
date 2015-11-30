@@ -1,6 +1,6 @@
 # gkut
 
-gkut is a set of "kinda useful tools" that uses the gromacs api.
+gkut is a set of "kinda useful tools" that use the Gromacs API.
 
 ### Copyright 
 (c) 2015 Ahnaf Siddiqui
