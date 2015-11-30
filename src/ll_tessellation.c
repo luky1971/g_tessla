@@ -286,12 +286,12 @@ void print_grid(struct tessellated_grid *grid, const char *fname) {
 		}
 	}
 
-	fprintf(f, "\n\nHeightmap ([x]: y heights in z index. -1 means empty.):");
+	fprintf(f, "\n\nHeightmap (max weight z indexes, x rows by y columns):\n");
 	for(int x = 0; x < dimx; ++x) {
-		fprintf(f, "\n[%d]: ", x);
 		for(int y = 0; y < dimy; ++y) {
-			fprintf(f, "%d ", grid->heightmap[x*dimy + y]);
+			fprintf(f, "%d\t", grid->heightmap[x*dimy + y]);
 		}
+		fprintf(f, "\n");
 	}
 
 	fprintf(f, "\n\nGrid cell areas (Cell with origin indices [x][y]: area):\n");
@@ -309,23 +309,23 @@ void print_grid(struct tessellated_grid *grid, const char *fname) {
 
 	print_log("Tessellation data saved to %s\n", fname);
 
-	char fhmname[256];
+	// char fhmname[256];
 
-	strcpy(fhmname, "heightmap_");
-	strcat(fhmname, fname);
+	// strcpy(fhmname, "heightmap_");
+	// strcat(fhmname, fname);
 
-	FILE *fhm = fopen(fhmname, "w");
+	// FILE *fhm = fopen(fhmname, "w");
 
-	for(int x = 0; x < dimx; ++x) {
-		for(int y = 0; y < dimy; ++y) {
-			fprintf(fhm, "%d\t", grid->heightmap[x*dimy + y]);
-		}
-		fprintf(fhm, "\n");
-	}
+	// for(int x = 0; x < dimx; ++x) {
+	// 	for(int y = 0; y < dimy; ++y) {
+	// 		fprintf(fhm, "%d\t", grid->heightmap[x*dimy + y]);
+	// 	}
+	// 	fprintf(fhm, "\n");
+	// }
 
-	fclose(fhm);
+	// fclose(fhm);
 
-	print_log("Heightmap saved to %s\n", fhmname);
+	// print_log("Heightmap saved to %s\n", fhmname);
 }
 
 
