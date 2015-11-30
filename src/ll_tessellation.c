@@ -6,6 +6,7 @@
 
 #include <float.h>
 #include <stdio.h>
+#include <string.h>
 #include "smalloc.h"
 #include "vec.h"
 
@@ -305,6 +306,26 @@ void print_grid(struct tessellated_grid *grid, const char *fname) {
 	fprintf(f, "Tessellated surface area per particle: %f\n", grid->area_per_particle);
 
 	fclose(f);
+
+	print_log("Tessellation data saved to %s\n", fname);
+
+	char fhmname[256];
+
+	strcpy(fhmname, "heightmap_");
+	strcat(fhmname, fname);
+
+	FILE *fhm = fopen(fhmname, "w");
+
+	for(int x = 0; x < dimx; ++x) {
+		for(int y = 0; y < dimy; ++y) {
+			fprintf(fhm, "%d\t", grid->heightmap[x*dimy + y]);
+		}
+		fprintf(fhm, "\n");
+	}
+
+	fclose(fhm);
+
+	print_log("Heightmap saved to %s\n", fhmname);
 }
 
 

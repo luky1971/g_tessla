@@ -52,10 +52,10 @@ int main(int argc, char *argv[]) {
 			"The current width is %f.\n", grid.num_empty, grid.cell_width);
 	}
 
-	print_grid(&grid, fnames[efT_OUTDAT]);
-
-	print_log("Tessellation data saved to %s\n", fnames[efT_OUTDAT]);
 	print_log("Tessellated surface area per particle: %f\n", grid.area_per_particle);
+	print_log("Saving tessellation data to %s...\n", fnames[efT_OUTDAT]);
+
+	print_grid(&grid, fnames[efT_OUTDAT]);
 
 	free_grid(&grid);
 
