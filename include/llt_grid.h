@@ -28,12 +28,12 @@ struct tessellated_grid{
 
 /* Weight functions */
 
-real weight_dist(rvec a, rvec b);
-/* Assigns weight based on distance between a and b. Closer distance = higher weight.
+real weight_dist(rvec traj_point, rvec grid_point);
+/* Assigns weight based on distance. Closer distance = higher weight.
  */
 
-real weight_dist2(rvec a, rvec b);
-/* Assigns weight based on distance squared between a and b. Closer distance squared = higher weight.
+real weight_dist2(rvec traj_point, rvec grid_point);
+/* Assigns weight based on distance squared. Closer distance squared = higher weight.
  */
 
 /***/

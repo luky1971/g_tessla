@@ -15,12 +15,12 @@
 
 static real llt_diag, llt_diag2;
 
-real weight_dist(rvec a, rvec b) {
-	return llt_diag - sqrt(distance2(a, b));
+real weight_dist(rvec traj_point, rvec grid_point) {
+	return llt_diag - sqrt(distance2(traj_point, grid_point));
 }
 
-real weight_dist2(rvec a, rvec b) {
-	return llt_diag2 - distance2(a, b);
+real weight_dist2(rvec traj_point, rvec grid_point) {
+	return llt_diag2 - distance2(traj_point, grid_point);
 }
 
 

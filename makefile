@@ -24,14 +24,19 @@ endif
 
 .PHONY: install clean
 
-$(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/llt_grid.o
-	make VGRO=$(VGRO) -C $(GKUT) && $(CC) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/llt_grid.o $(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(LINKGRO) $(LIBGRO)
+$(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o
+	make CC=$(CC) GROMACS=$(GROMACS) VGRO=$(VGRO) -C $(GKUT) \
+	&& $(CC) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o \
+	$(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(LINKGRO) $(LIBGRO)
 
 install: $(BUILD)/lltessellator
 	install $(BUILD)/lltessellator $(INSTALL)
 
 $(BUILD)/lltessellator.o: $(SRC)/lltessellator.c $(INCLUDE)/llt_grid.h
 	$(CC) $(CFLAGS) -o $(BUILD)/lltessellator.o -c $(SRC)/lltessellator.c $(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include
+
+$(BUILD)/llt_tri.o: $(SRC)/llt_tri.c $(INCLUDE)/llt_tri.h
+	$(CC) $(CFLAGS) -o $(BUILD)/llt_tri.o -c $(SRC)/llt_tri.c $(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include
 
 $(BUILD)/llt_grid.o: $(SRC)/llt_grid.c $(INCLUDE)/llt_grid.h
 	$(CC) $(CFLAGS) -o $(BUILD)/llt_grid.o -c $(SRC)/llt_grid.c $(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include
