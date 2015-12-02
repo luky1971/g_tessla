@@ -2,7 +2,7 @@
  * Copyright Ahnaf Siddiqui and Sameer Varma.
  */
 
-#include "ll_tessellation.h"
+#include "llt_grid.h"
 
 #include <float.h>
 #include <stdio.h>
@@ -24,7 +24,7 @@ real weight_dist2(rvec a, rvec b) {
 }
 
 
-void llt_area(const char *traj_fname, const char *ndx_fname, 
+void llt_grid_area(const char *traj_fname, const char *ndx_fname, 
 	real cell_width, real (*fweight)(rvec, rvec), output_env_t *oenv, struct tessellated_grid *grid) {
 	rvec **pre_x, **x;
 	int nframes, natoms;
@@ -69,7 +69,7 @@ void llt_area(const char *traj_fname, const char *ndx_fname,
 		x = pre_x;
 	}
 
-	f_llt_area(x, nframes, natoms, cell_width, fweight, grid);
+	f_llt_grid_area(x, nframes, natoms, cell_width, fweight, grid);
 
 	// free memory
 	for(int i = 0; i < nframes; ++i) {
@@ -79,7 +79,7 @@ void llt_area(const char *traj_fname, const char *ndx_fname,
 }
 
 
-void f_llt_area(rvec **x, int nframes, int natoms, 
+void f_llt_grid_area(rvec **x, int nframes, int natoms, 
 	real cell_width, real (*fweight)(rvec, rvec), struct tessellated_grid *grid) {
 	construct_grid(x, nframes, natoms, cell_width, grid);
 
@@ -87,7 +87,7 @@ void f_llt_area(rvec **x, int nframes, int natoms,
 
 	gen_heightmap(grid);
 
-	tessellate_area(grid);
+	tessellate_grid(grid);
 
 	grid->area_per_particle = grid->surface_area / natoms;
 }
@@ -207,7 +207,7 @@ void gen_heightmap(struct tessellated_grid *grid) {
 }
 
 
-void tessellate_area(struct tessellated_grid *grid) {
+void tessellate_grid(struct tessellated_grid *grid) {
 	int dimx = grid->dimx, dimy = grid->dimy, dimz = grid->dimz;
 	int *heightmap = grid->heightmap;
 	real *areas = grid->areas;

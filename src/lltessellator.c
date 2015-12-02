@@ -6,7 +6,7 @@
 
 #include "gkut_log.h"
 
-#include "ll_tessellation.h"
+#include "llt_grid.h"
 
 enum {efT_TRAJ, efT_NDX, efT_OUTDAT, efT_NUMFILES};
 
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 
 	if(linear)	fweight = weight_dist;
 
-	llt_area(fnames[efT_TRAJ], fnames[efT_NDX], cell_width, fweight, &oenv, &grid);
+	llt_grid_area(fnames[efT_TRAJ], fnames[efT_NDX], cell_width, fweight, &oenv, &grid);
 
 	if(grid.num_empty > 0) {
 		print_log("\n\nWARNING: %d grid cell(s) have empty corner(s).\n"
