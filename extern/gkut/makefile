@@ -1,4 +1,4 @@
-CC ?= gcc
+cc ?= gcc
 CFLAGS += -O3
 GROMACS = /usr/local/gromacs
 VGRO = 5
@@ -22,10 +22,10 @@ endif
 all: $(BUILD)/gkut_io.o $(BUILD)/gkut_log.o
 
 $(BUILD)/gkut_io.o: $(SRC)/gkut_io.c $(INCLUDE)/gkut_io.h
-	$(CC) $(CFLAGS) -o $(BUILD)/gkut_io.o -c $(SRC)/gkut_io.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
+	$(cc) $(CFLAGS) -o $(BUILD)/gkut_io.o -c $(SRC)/gkut_io.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
 
 $(BUILD)/gkut_log.o: $(SRC)/gkut_log.c $(INCLUDE)/gkut_log.h
-	$(CC) $(CFLAGS) -o $(BUILD)/gkut_log.o -c $(SRC)/gkut_log.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
+	$(cc) $(CFLAGS) -o $(BUILD)/gkut_log.o -c $(SRC)/gkut_log.c $(DEFV5) -I$(INCLUDE) $(INCGRO)
 
 clean:
 	rm -f $(BUILD)/*.o

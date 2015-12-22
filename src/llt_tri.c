@@ -6,6 +6,9 @@
 
 #include <float.h>
 #include <string.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include "gkut_io.h"
 #include "gkut_log.h"
 #include "smalloc.h"
@@ -31,12 +34,17 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 	if(flags & LLT_CORRECT) {
 		print_log("Triangulating and correcting %d frames...\n", *nframes);
 
-		real area1, area2, minx, maxx, dim;
-		rvec *x2, vecprime;
+#ifndef _OPENMP
+		rvec *x2;
 		snew(x2, 2 * *natoms);
+#endif
 
+#pragma omp parallel for shared(nframes,areas,x,natoms,flags)
 		for(int i = 0; i < *nframes; ++i) {
-			minx = FLT_MAX, maxx = FLT_MIN;
+#if defined _OPENMP && defined LLT_DEBUG
+			print_log("%d threads triangulating.\n", omp_get_num_threads());
+#endif
+			real area1, area2, minx = FLT_MAX, maxx = FLT_MIN, dim;
 
 			for(int j = 0; j < *natoms; ++j) {
 				if(x[i][j][XX] < minx)	minx = x[i][j][XX];
@@ -47,23 +55,39 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 			area1 = tri_surface_area(x[i], *natoms, flags);
 
 			// Correction for periodic bounds
-			memcpy(x2, x[i], sizeof(rvec) * *natoms);
-			memcpy(x2 + *natoms, x[i], sizeof(rvec) * *natoms);
+			rvec *trans_x;
+#ifdef _OPENMP
+			snew(trans_x, 2 * *natoms); // if parallelized, each thread has its own array to write vectors
+#else
+			trans_x = x2; // otherwise, all iterations write to the same array
+#endif
+			memcpy(trans_x, x[i], sizeof(rvec) * *natoms);
+			memcpy(trans_x + *natoms, x[i], sizeof(rvec) * *natoms);
 
 			for(int j = *natoms; j < *natoms * 2; ++j) {
-				x2[j][XX] += dim;
+				trans_x[j][XX] += dim;
 			}
 
-			area2 = tri_surface_area(x2, 2 * *natoms, flags);
+			area2 = tri_surface_area(trans_x, 2 * *natoms, flags);
+
+#ifdef _OPENMP
+			sfree(trans_x);
+#endif
 
 			(*areas)[i] = 2 * area2 - 3 * area1;
 		}
+#ifndef _OPENMP
 		sfree(x2);
+#endif
 	}
 	else {
 		print_log("Triangulating %d frames...\n", *nframes);
 
+#pragma omp parallel for shared(nframes,areas,x,natoms,flags)
 		for(int i = 0; i < *nframes; ++i) {
+#if defined _OPENMP && defined LLT_DEBUG
+			print_log("%d threads triangulating.\n", omp_get_num_threads());
+#endif
 			(*areas)[i] = tri_surface_area(x[i], *natoms, flags);
 		}
 	}
