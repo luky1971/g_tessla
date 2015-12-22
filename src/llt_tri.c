@@ -4,13 +4,15 @@
 
 #include "llt_tri.h"
 
+#include <float.h>
+#include <string.h>
 #include "gkut_io.h"
 #include "gkut_log.h"
 #include "smalloc.h"
 
 
 void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
-	real **areas, int *nframes, int *natoms) {
+	real **areas, int *nframes, int *natoms, unsigned char flags) {
 	rvec **pre_x, **x;
 	real area;
 
@@ -24,10 +26,46 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 		x = pre_x;
 	}
 
-	// Calculate triangulated surface area for every frame 
+	// Calculate triangulated surface area for every frame
 	snew(*areas, *nframes);
-	for(int i = 0; i < *nframes; ++i) {
-		(*areas)[i] = tri_surface_area(x[i], *natoms);
+	if(flags & LLT_CORRECT) {
+		print_log("Triangulating and correcting %d frames...\n", *nframes);
+
+		real area1, area2, minx, maxx, dim;
+		rvec *x2, vecprime;
+		snew(x2, 2 * *natoms);
+
+		for(int i = 0; i < *nframes; ++i) {
+			minx = FLT_MAX, maxx = FLT_MIN;
+
+			for(int j = 0; j < *natoms; ++j) {
+				if(x[i][j][XX] < minx)	minx = x[i][j][XX];
+				if(x[i][j][XX] > maxx)	maxx = x[i][j][XX];
+			}
+			dim = maxx - minx;
+
+			area1 = tri_surface_area(x[i], *natoms, flags);
+
+			// Correction for periodic bounds
+			memcpy(x2, x[i], sizeof(rvec) * *natoms);
+			memcpy(x2 + *natoms, x[i], sizeof(rvec) * *natoms);
+
+			for(int j = *natoms; j < *natoms * 2; ++j) {
+				x2[j][XX] += dim;
+			}
+
+			area2 = tri_surface_area(x2, 2 * *natoms, flags);
+
+			(*areas)[i] = 2 * area2 - 3 * area1;
+		}
+		sfree(x2);
+	}
+	else {
+		print_log("Triangulating %d frames...\n", *nframes);
+
+		for(int i = 0; i < *nframes; ++i) {
+			(*areas)[i] = tri_surface_area(x[i], *natoms, flags);
+		}
 	}
 
 	// free memory
@@ -38,14 +76,14 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 }
 
 
-real tri_surface_area(rvec *x, int natoms) {
-#ifdef LLT_DEBUG
+real tri_surface_area(rvec *x, int natoms, unsigned char flags) {
 	static int iter = 0;
-	++iter;
-#endif
+
 	char *tri_options = "zNQ";
 	struct triangulateio tio;
 	real area = 0;
+
+	++iter;
 
 	// input initialization
 	snew(tio.pointlist, 2 * natoms);
@@ -64,12 +102,12 @@ real tri_surface_area(rvec *x, int natoms) {
 	// triangulate the atoms
 	triangulate(tri_options, &tio, &tio, NULL);
 
-#ifdef LLT_DEBUG
-	char fname1[50], fname2[50];
-	sprintf(fname1, "triangles%d.node", iter);
-	sprintf(fname2, "triangles%d.ele", iter);
-	print_trifiles(&tio, fname1, fname2);
-#endif
+	if(flags & LLT_PRINT) { // print triangle data to files that can be viewed with triangle's 'showme' program
+		char fname1[50], fname2[50];
+		sprintf(fname1, "triangles%d.node", iter);
+		sprintf(fname2, "triangles%d.ele", iter);
+		print_trifiles(&tio, fname1, fname2);
+	}
 
 	sfree(tio.pointlist);
 
@@ -99,6 +137,8 @@ void print_areas(const char *fname, real *areas, int nframes, int natoms) {
 
 	fprintf(f, "Average area per particle: %f\n", (sum / nframes) / natoms);
 	print_log("Average area per particle: %f\n", (sum / nframes) / natoms);
+
+	print_log("Surface areas saved to %s\n", fname);
 
 	fclose(f);
 }

@@ -13,10 +13,17 @@
 #include "statutil.h"
 #endif
 
-void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
-	real **areas, int *nframes, int *natoms);
 
-real tri_surface_area(rvec *x, int natoms);
+enum {
+	LLT_CORRECT = 1,
+	LLT_PRINT = 2
+};
+
+
+void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
+	real **areas, int *nframes, int *natoms, unsigned char flags);
+
+real tri_surface_area(rvec *x, int natoms, unsigned char flags);
 
 void print_areas(const char *fname, real *areas, int nframes, int natoms);
 
