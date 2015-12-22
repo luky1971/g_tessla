@@ -9,6 +9,9 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+#ifdef LLT_BENCH
+#include <time.h>
+#endif
 #include "gkut_io.h"
 #include "gkut_log.h"
 #include "smalloc.h"
@@ -29,6 +32,13 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 		x = pre_x;
 	}
 
+#ifdef LLT_BENCH
+	clock_t start = clock();
+#endif
+
+#ifdef _OPENMP
+	print_log("Triangulation will be parallelized.\n");
+#endif
 	// Calculate triangulated surface area for every frame
 	snew(*areas, *nframes);
 	if(flags & LLT_CORRECT) {
@@ -97,6 +107,11 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 		sfree(x[i]);
 	}
 	sfree(x);
+
+#ifdef LLT_BENCH
+	clock_t clocks = clock() - start;
+	print_log("Triangulation took %d clocks, %f seconds.\n", clocks, (float)clocks/CLOCKS_PER_SEC);
+#endif
 }
 
 

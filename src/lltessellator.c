@@ -2,6 +2,9 @@
  * Copyright Ahnaf Siddiqui and Sameer Varma.
  */
 
+#ifdef LLT_BENCH
+#include <time.h>
+#endif
 #include "macros.h"
 #include "smalloc.h"
 
@@ -13,6 +16,10 @@
 enum {efT_TRAJ, efT_NDX, efT_OUTDAT, efT_NUMFILES};
 
 int main(int argc, char *argv[]) {
+#ifdef LLT_BENCH
+	clock_t start = clock();
+#endif
+
 	const char *desc[] = {
 		"lltessellator reads a trajectory file and tessellates its coordinates.\n",
 		"It can either tessellate the points in each frame using delaunay triangulation and calculate average surface area,\n",
@@ -80,6 +87,11 @@ int main(int argc, char *argv[]) {
 
 		sfree(areas);
 	}
+
+#ifdef LLT_BENCH
+	clock_t clocks = clock() - start;
+	print_log("lltessellator took %d clocks, %f seconds.\n", clocks, (float)clocks/CLOCKS_PER_SEC);
+#endif
 
 	close_log();
 
