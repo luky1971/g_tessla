@@ -3,6 +3,7 @@
  */
 
 #include "macros.h"
+#include "smalloc.h"
 
 #include "gkut_log.h"
 
@@ -14,9 +15,9 @@ enum {efT_TRAJ, efT_NDX, efT_OUTDAT, efT_NUMFILES};
 int main(int argc, char *argv[]) {
 	const char *desc[] = {
 		"lltessellator reads a trajectory file and tessellates its coordinates.\n",
-		"It can either tessellate the points in every frame and calculate average surface area,\n",
-		"or it can load the points into a weighted grid and tessellate based on density.\n",
-		"Set the -dense option to use this second method.\n"
+		"It can either tessellate the points in each frame using delaunay triangulation and calculate average surface area,\n",
+		"or it can load the points from all frames into a weighted grid and tessellate the grid based on density.\n",
+		"Set the -dense option to use the latter method.\n"
 	};
 	const char *fnames[efT_NUMFILES];
 	output_env_t oenv = NULL;
@@ -64,7 +65,14 @@ int main(int argc, char *argv[]) {
 		free_grid(&grid);
 	}
 	else {
-		llt_tri_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv);
+		real *areas;
+		int nframes, natoms;
+		
+		llt_tri_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, &areas, &nframes, &natoms);
+
+		print_areas(fnames[efT_OUTDAT], areas, nframes, natoms);
+
+		sfree(areas);
 	}
 
 	close_log();
