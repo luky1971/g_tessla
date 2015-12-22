@@ -5,8 +5,8 @@
 #ifndef GKUT_LOG_H
 #define GKUT_LOG_H
 
-void init_log(const char *logfile, const char *program);
-/* Opens the logfile and logs initial time/date. Remember to close_log() at end of program.
+void init_log(const char *logfile, int argc, char *argv[]);
+/* Opens the logfile and logs program command and initial time/date. Remember to close_log() at end of program.
  */
 
 void close_log();

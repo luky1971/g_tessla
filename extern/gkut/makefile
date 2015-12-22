@@ -1,19 +1,20 @@
-CC=gcc
-GROMACS=/usr/local/gromacs
-VGRO=5
-INCLUDE=include
-SRC=src
-BUILD=build
+CC ?= gcc
+CFLAGS += -O3
+GROMACS = /usr/local/gromacs
+VGRO = 5
+INCLUDE = include
+SRC = src
+BUILD = build
 
 ifeq ($(VGRO),5)
-INCGRO=-I$(GROMACS)/include/gromacs/utility
-LINKGRO=-L$(GROMACS)/lib/i386-linux-gnu
-LIBGRO=-lgromacs
-DEFV5=-D GRO_V5
+INCGRO = -I$(GROMACS)/include/gromacs/utility
+LINKGRO = -L$(GROMACS)/lib/i386-linux-gnu
+LIBGRO = -lgromacs
+DEFV5 = -D GRO_V5
 else
-INCGRO=-I$(GROMACS)/include/gromacs
-LINKGRO=-L$(GROMACS)/lib
-LIBGRO=-lgmx
+INCGRO = -I$(GROMACS)/include/gromacs
+LINKGRO = -L$(GROMACS)/lib
+LIBGRO = -lgmx
 endif
 
 .PHONY: all

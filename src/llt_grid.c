@@ -33,37 +33,7 @@ void llt_grid_area(const char *traj_fname, const char *ndx_fname,
 
 	// Filter trajectory by index file if present
 	if(ndx_fname != NULL) {
-		const int NUMGROUPS = 1;
-		int *isize;
-		atom_id **indx;
-		char **grp_names;
-
-		snew(isize, NUMGROUPS);
-		snew(indx, NUMGROUPS);
-		snew(grp_names, NUMGROUPS);
-
-		rd_index(ndx_fname, NUMGROUPS, isize, indx, grp_names);
-		sfree(grp_names);
-
-		natoms = isize[0];
-		sfree(isize);
-
-		snew(x, nframes);
-		for(int i = 0; i < nframes; ++i) {
-			snew(x[i], natoms);
-			for(int j = 0; j < natoms; ++j) {
-				copy_rvec(pre_x[i][indx[0][j]], x[i][j]);
-			}
-		}
-
-		// free memory
-		sfree(indx[0]);
-		sfree(indx);
-
-		for(int i = 0; i < nframes; ++i) {
-			sfree(pre_x[i]);
-		}
-		sfree(pre_x);
+		ndx_filter_traj(ndx_fname, &pre_x, &x, nframes, &natoms);
 	}
 	else {
 		x = pre_x;

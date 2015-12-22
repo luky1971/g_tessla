@@ -15,13 +15,18 @@
 
 static FILE *out_log = NULL;
 
-void init_log(const char *logfile, const char *program) {
+void init_log(const char *logfile, int argc, char *argv[]) {
 	out_log = fopen(logfile, "a");
 	
 	time_t t = time(NULL);
 	struct tm *ltime = localtime(&t);
-	fprintf(out_log, "\n%s run: %d-%d-%d %d:%d:%d\n", 
-		program, ltime->tm_mon + 1, ltime->tm_mday, ltime->tm_year + 1900, 
+
+	fprintf(out_log, "\n");
+	for(int i = 0; i < argc; ++i) {
+		fprintf(out_log, "%s ", argv[i]);
+	}
+	fprintf(out_log, "\nRun: %d-%d-%d %d:%d:%d\n", 
+		ltime->tm_mon + 1, ltime->tm_mday, ltime->tm_year + 1900, 
 		ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
 }
 

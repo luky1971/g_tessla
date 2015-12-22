@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	real cell_width = 0.1;
 	gmx_bool linear = FALSE;
 
-	init_log("llt.log", argv[0]);
+	init_log("llt.log", argc, argv);
 
 	t_filenm fnm[] = {
 		{efTRX, "-f", "traj.xtc", ffREAD},

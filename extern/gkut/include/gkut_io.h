@@ -19,4 +19,9 @@ void read_traj(const char *traj_fname, rvec ***x, int *nframes, int *natoms, out
  * 2D memory is allocated for x.
  */
 
+void ndx_filter_traj(const char *ndx_fname, rvec ***pre_x, rvec ***new_x, int nframes, int *natoms);
+/* Creates a new trajectory with only the coordinates from the old trajectory (pre_x) that are specified by the index file.
+ * 2D memory is freed for pre_x and allocated for x.
+ */
+
 #endif // GKUT_IO_H
