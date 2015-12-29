@@ -33,36 +33,53 @@ void read_traj(const char *traj_fname, rvec ***x, int *nframes, int *natoms, out
 	close_trx(status);
 }
 
-void ndx_filter_traj(const char *ndx_fname, rvec ***pre_x, rvec ***new_x, int nframes, int *natoms) {
+void print_traj(rvec **x, int nframes, int natoms, const char *fname) {
+	int fr, i;
+	FILE *f = fopen(fname, "w");
+
+	for(fr = 0; fr < nframes; ++fr) {
+		fprintf(f, "\nFrame %d\n", fr);
+		for(i = 0; i < natoms; ++i) {
+			fprintf(f, "%d: %f %f %f\n", i, x[fr][i][XX], x[fr][i][YY], x[fr][i][ZZ]);
+		}
+	}
+
+	fclose(f);
+}
+
+void ndx_get_indx(const char *ndx_fname, int numgroups, atom_id ***indx, int **isize) {
+	char **grp_names;
+
+	snew(*isize, numgroups);
+	snew(*indx, numgroups);
+	snew(grp_names, numgroups);
+
+	rd_index(ndx_fname, numgroups, *isize, *indx, grp_names);
+	sfree(grp_names);
+}
+
+void filter_vecs(atom_id *indx, int isize, rvec *pre_x, rvec **new_x) {
+	snew(*new_x, isize);
+	for(int i = 0; i < isize; ++i) {
+		copy_rvec(pre_x[indx[i]], (*new_x)[i]);
+	}
+}
+
+void ndx_filter_traj(const char *ndx_fname, rvec **pre_x, rvec ***new_x, int nframes, int *natoms) {
 	const int NUMGROUPS = 1;
 	int *isize;
 	atom_id **indx;
-	char **grp_names;
 
-	snew(isize, NUMGROUPS);
-	snew(indx, NUMGROUPS);
-	snew(grp_names, NUMGROUPS);
-
-	rd_index(ndx_fname, NUMGROUPS, isize, indx, grp_names);
-	sfree(grp_names);
+	ndx_get_indx(ndx_fname, NUMGROUPS, &indx, &isize);
 
 	*natoms = isize[0];
 	sfree(isize);
 
 	snew(*new_x, nframes);
 	for(int i = 0; i < nframes; ++i) {
-		snew((*new_x)[i], *natoms);
-		for(int j = 0; j < *natoms; ++j) {
-			copy_rvec((*pre_x)[i][indx[0][j]], (*new_x)[i][j]);
-		}
+		filter_vecs(indx[0], *natoms, pre_x[i], &((*new_x)[i]));
 	}
 
-	// free pre (unfiltered) trajectory's memory
 	sfree(indx[0]);
 	sfree(indx);
-
-	for(int i = 0; i < nframes; ++i) {
-		sfree((*pre_x)[i]);
-	}
-	sfree(*pre_x);
 }

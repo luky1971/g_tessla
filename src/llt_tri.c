@@ -20,17 +20,27 @@
 void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
 	real **areas, int *nframes, int *natoms, unsigned char flags) {
 	rvec **pre_x, **x;
-	real area;
+	matrix *box;
 
 	read_traj(traj_fname, &pre_x, nframes, natoms, oenv);
 
 	// Filter trajectory by index file if present
 	if(ndx_fname != NULL) {
-		ndx_filter_traj(ndx_fname, &pre_x, &x, *nframes, natoms);
+		ndx_filter_traj(ndx_fname, pre_x, &x, *nframes, natoms);
+
+		for(int i = 0; i < *nframes; ++i) {
+			sfree(pre_x[i]);
+		}
+		sfree(pre_x);
 	}
 	else {
 		x = pre_x;
 	}
+
+#ifdef LLT_DEBUG
+	// test filtering
+	print_traj(x, *nframes, *natoms, "traj.dat");
+#endif
 
 #ifdef LLT_BENCH
 	clock_t start = clock();
@@ -56,12 +66,14 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 #endif
 			real area1, area2, minx = FLT_MAX, maxx = FLT_MIN, dim;
 
+			// Get x translation for correction
 			for(int j = 0; j < *natoms; ++j) {
 				if(x[i][j][XX] < minx)	minx = x[i][j][XX];
 				if(x[i][j][XX] > maxx)	maxx = x[i][j][XX];
 			}
 			dim = maxx - minx;
 
+			// Get area without correction
 			area1 = tri_surface_area(x[i], *natoms, flags);
 
 			// Correction for periodic bounds
@@ -78,12 +90,14 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 				trans_x[j][XX] += dim;
 			}
 
+			// Get area with translated image
 			area2 = tri_surface_area(trans_x, 2 * *natoms, flags);
 
 #ifdef _OPENMP
 			sfree(trans_x);
 #endif
 
+			// Corrected area
 			(*areas)[i] = 2 * area2 - 3 * area1;
 		}
 #ifndef _OPENMP

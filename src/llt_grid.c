@@ -33,7 +33,12 @@ void llt_grid_area(const char *traj_fname, const char *ndx_fname,
 
 	// Filter trajectory by index file if present
 	if(ndx_fname != NULL) {
-		ndx_filter_traj(ndx_fname, &pre_x, &x, nframes, &natoms);
+		ndx_filter_traj(ndx_fname, pre_x, &x, nframes, &natoms);
+
+		for(int i = 0; i < nframes; ++i) {
+			sfree(pre_x[i]);
+		}
+		sfree(pre_x);
 	}
 	else {
 		x = pre_x;
