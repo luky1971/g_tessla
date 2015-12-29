@@ -1,5 +1,5 @@
 cc ?= gcc
-CFLAGS = -O3 -DLLT_DEBUG
+CFLAGS =' -O3 -DLLT_DEBUG
 
 GROMACS = /usr/local/gromacs
 VGRO = 5
@@ -28,7 +28,9 @@ LIBGRO = -lgmx
 endif
 
 ifneq ($(PARALLEL),0)
-CFLAGS += -fopenmp
+CFLAGS +=-fopenmp '
+else
+CFLAGS = '
 endif
 
 .PHONY: install clean
