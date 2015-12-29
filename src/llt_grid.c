@@ -27,9 +27,11 @@ real weight_dist2(rvec traj_point, rvec grid_point) {
 void llt_grid_area(const char *traj_fname, const char *ndx_fname, 
 	real cell_width, real (*fweight)(rvec, rvec), output_env_t *oenv, struct tessellated_grid *grid) {
 	rvec **pre_x, **x;
+	matrix *box;
 	int nframes, natoms;
 
-	read_traj(traj_fname, &pre_x, &nframes, &natoms, oenv);
+	read_traj(traj_fname, &pre_x, &box, &nframes, &natoms, oenv);
+	sfree(box);
 
 	// Filter trajectory by index file if present
 	if(ndx_fname != NULL) {

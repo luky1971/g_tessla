@@ -12,11 +12,13 @@
 #include "statutil.h"
 #endif
 
-#define FRAMESTEP 500 // The number of new frames by which to reallocate an array of length # trajectory frames
+#define FRAMESTEP 1000 // The number of new frames by which to reallocate an array of length # trajectory frames
 
-void read_traj(const char *traj_fname, rvec ***x, int *nframes, int *natoms, output_env_t *oenv);
-/* Reads a trajectory file. rvec **x is position coordinates indexed x[frame #][atom #]
- * 2D memory is allocated for x.
+void read_traj(const char *traj_fname, rvec ***x, matrix **box, int *nframes, int *natoms, output_env_t *oenv);
+/* Reads a trajectory file.
+ * rvec **x is position coordinates indexed x[frame #][atom #].
+ * matrix *box is a 1D array of matrices indexed [frame #]
+ * 2D memory is allocated for x and 1D memory is allocated for box.
  */
 
 void print_traj(rvec **x, int nframes, int natoms, const char *fname);

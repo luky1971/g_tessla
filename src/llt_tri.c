@@ -22,7 +22,7 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 	rvec **pre_x, **x;
 	matrix *box;
 
-	read_traj(traj_fname, &pre_x, nframes, natoms, oenv);
+	read_traj(traj_fname, &pre_x, &box, nframes, natoms, oenv);
 
 	// Filter trajectory by index file if present
 	if(ndx_fname != NULL) {
@@ -64,14 +64,7 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 #if defined _OPENMP && defined LLT_DEBUG
 			print_log("%d threads triangulating.\n", omp_get_num_threads());
 #endif
-			real area1, area2, minx = FLT_MAX, maxx = FLT_MIN, dim;
-
-			// Get x translation for correction
-			for(int j = 0; j < *natoms; ++j) {
-				if(x[i][j][XX] < minx)	minx = x[i][j][XX];
-				if(x[i][j][XX] > maxx)	maxx = x[i][j][XX];
-			}
-			dim = maxx - minx;
+			real area1, area2;
 
 			// Get area without correction
 			area1 = tri_surface_area(x[i], *natoms, flags);
@@ -87,7 +80,7 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 			memcpy(trans_x + *natoms, x[i], sizeof(rvec) * *natoms);
 
 			for(int j = *natoms; j < *natoms * 2; ++j) {
-				trans_x[j][XX] += dim;
+				trans_x[j][XX] += box[i][0][0];
 			}
 
 			// Get area with translated image
@@ -103,8 +96,10 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 #ifndef _OPENMP
 		sfree(x2);
 #endif
+		sfree(box);
 	}
 	else {
+		sfree(box); // Don't need box if not correcting
 		print_log("Triangulating %d frames...\n", *nframes);
 
 #pragma omp parallel for shared(nframes,areas,x,natoms,flags)
@@ -116,7 +111,7 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 		}
 	}
 
-	// free memory
+	// free trajectory
 	for(int i = 0; i < *nframes; ++i) {
 		sfree(x[i]);
 	}
