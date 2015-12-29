@@ -1,5 +1,5 @@
 cc ?= gcc
-CFLAGS = -O3
+CFLAGS = -O3 -DLLT_DEBUG
 
 GROMACS = /usr/local/gromacs
 VGRO = 5
@@ -34,7 +34,7 @@ endif
 .PHONY: install clean
 
 $(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o
-	make GROMACS=$(GROMACS) VGRO=$(VGRO) -C $(GKUT) \
+	make cc=$(cc) CFLAGS=$(CFLAGS) GROMACS=$(GROMACS) VGRO=$(VGRO) -C $(GKUT) \
 	&& make trilibrary -C $(TRI) \
 	&& $(cc) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o \
 	$(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(TRI)/triangle.o $(LINKGRO) $(LIBGRO)
