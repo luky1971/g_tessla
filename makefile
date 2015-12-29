@@ -1,5 +1,5 @@
 cc ?= gcc
-CFLAGS = -O3 -DLLT_DEBUG
+CFLAGS += -O3
 
 GROMACS = /usr/local/gromacs
 VGRO = 5
@@ -39,7 +39,7 @@ MCFLAGS +='
 
 $(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o
 	make cc=$(cc) CFLAGS=$(MCFLAGS) GROMACS=$(GROMACS) VGRO=$(VGRO) -C $(GKUT) \
-	&& make trilibrary -C $(TRI) \
+	&& make cc=$(cc) trilibrary -C $(TRI) \
 	&& $(cc) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o \
 	$(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(TRI)/triangle.o $(LINKGRO) $(LIBGRO)
 
