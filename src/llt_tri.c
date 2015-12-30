@@ -179,7 +179,7 @@ void print_areas(const char *fname, struct tri_area *areas) {
 	real sum = 0;
 
 	if(areas->area1 && areas->area2) { // Corrected for periodic bounding conditions
-		fprintf(f, "FRAME\tAREA1\tAREA2\tCORRECTED-AREA\t\"\"/particle\n");
+		fprintf(f, "# FRAME\tAREA1\tAREA2\tCORRECTED-AREA\t\"\"/particle\n");
 		for(int i =0; i < areas->nframes; ++i) {
 			fprintf(f, "%d\t%f\t%f\t%f\t%f\t%f\t%f\n", i, 
 				areas->area1[i], areas->area2[i], areas->area[i],
@@ -187,23 +187,23 @@ void print_areas(const char *fname, struct tri_area *areas) {
 			sum += areas->area[i];
 		}
 
-		fprintf(f, "\nAverage corrected surface area: %f\n", sum / areas->nframes);
+		fprintf(f, "\n# Average corrected surface area: %f\n", sum / areas->nframes);
 		print_log("Average corrected surface area: %f\n", sum / areas->nframes);
 
-		fprintf(f, "Average corrected area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
+		fprintf(f, "# Average corrected area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
 		print_log("Average corrected area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
 	}
 	else { // Not corrected
-		fprintf(f, "FRAME\tAREA\tAREA/PARTICLE\n");
+		fprintf(f, "# FRAME\tAREA\tAREA/PARTICLE\n");
 		for(int i = 0; i < areas->nframes; ++i) {
 			fprintf(f, "%d\t%f\t%f\n", i, areas->area[i], areas->area[i] / areas->natoms);
 			sum += areas->area[i];
 		}
 
-		fprintf(f, "\nAverage surface area: %f\n", sum / areas->nframes);
+		fprintf(f, "\n# Average surface area: %f\n", sum / areas->nframes);
 		print_log("Average surface area: %f\n", sum / areas->nframes);
 
-		fprintf(f, "Average area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
+		fprintf(f, "# Average area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
 		print_log("Average area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
 	}
 
