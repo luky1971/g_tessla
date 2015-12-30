@@ -7,11 +7,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <time.h>
-#ifdef GRO_V5
-#include "fatalerror.h"
-#else
 #include "gmx_fatal.h"
-#endif
 
 static FILE *out_log = NULL;
 

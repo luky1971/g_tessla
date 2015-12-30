@@ -4,6 +4,10 @@
 
 #include "gkut_io.h"
 
+#ifdef GRO_V5
+#include "index.h"
+#include "trxio.h"
+#endif
 #include "smalloc.h"
 
 void read_traj(const char *traj_fname, rvec ***x, matrix **box, int *nframes, int *natoms, output_env_t *oenv) {

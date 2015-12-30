@@ -12,13 +12,15 @@ SRC = src
 BUILD = build
 INSTALL = /usr/local/bin
 
+LIBS = -lm
+
 ifeq ($(VGRO),5)
 INCGRO = -I$(GROMACS)/include/ \
 	-I$(GROMACS)/include/gromacs/utility \
 	-I$(GROMACS)/include/gromacs/fileio \
 	-I$(GROMACS)/include/gromacs/commandline \
 	-I$(GROMACS)/include/gromacs/legacyheaders
-LINKGRO = -L$(GROMACS)/lib/i386-linux-gnu
+LINKGRO = -L$(GROMACS)/lib/x86_64-linux-gnu
 LIBGRO = -lgromacs
 DEFV5 = -D GRO_V5
 else
@@ -41,7 +43,7 @@ $(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt
 	make cc=$(cc) CFLAGS=$(MCFLAGS) GROMACS=$(GROMACS) VGRO=$(VGRO) -C $(GKUT) \
 	&& make cc=$(cc) trilibrary -C $(TRI) \
 	&& $(cc) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o \
-	$(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(TRI)/triangle.o $(LINKGRO) $(LIBGRO)
+	$(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(TRI)/triangle.o $(LINKGRO) $(LIBGRO) $(LIBS)
 
 install: $(BUILD)/lltessellator
 	install $(BUILD)/lltessellator $(INSTALL)
