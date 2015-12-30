@@ -76,16 +76,15 @@ int main(int argc, char *argv[]) {
 		free_grid(&grid);
 	}
 	else {
-		real *areas;
-		int nframes, natoms;
+		struct tri_area areas;
 
 		unsigned long flags = (int)correct | ((int)print * 2);
 		
-		llt_tri_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, &areas, &nframes, &natoms, flags);
+		llt_tri_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, &areas, flags);
 
-		print_areas(fnames[efT_OUTDAT], areas, nframes, natoms);
+		print_areas(fnames[efT_OUTDAT], &areas);
 
-		sfree(areas);
+		free_tri_area(&areas);
 	}
 
 #ifdef LLT_BENCH

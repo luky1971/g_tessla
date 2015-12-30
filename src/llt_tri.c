@@ -18,17 +18,21 @@
 
 
 void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
-	real **areas, int *nframes, int *natoms, unsigned char flags) {
+	struct tri_area *areas, unsigned char flags) {
 	rvec **pre_x, **x;
 	matrix *box;
 
-	read_traj(traj_fname, &pre_x, &box, nframes, natoms, oenv);
+	areas->area = NULL;
+	areas->area1 = NULL;
+	areas->area2 = NULL;
+
+	read_traj(traj_fname, &pre_x, &box, &(areas->nframes), &(areas->natoms), oenv);
 
 	// Filter trajectory by index file if present
 	if(ndx_fname != NULL) {
-		ndx_filter_traj(ndx_fname, pre_x, &x, *nframes, natoms);
+		ndx_filter_traj(ndx_fname, pre_x, &x, areas->nframes, &(areas->natoms));
 
-		for(int i = 0; i < *nframes; ++i) {
+		for(int i = 0; i < areas->nframes; ++i) {
 			sfree(pre_x[i]);
 		}
 		sfree(pre_x);
@@ -39,7 +43,7 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 
 #ifdef LLT_DEBUG
 	// test filtering
-	print_traj(x, *nframes, *natoms, "traj.dat");
+	print_traj(x, areas->nframes, areas->natoms, "traj.dat");
 #endif
 
 #ifdef LLT_BENCH
@@ -50,48 +54,48 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 	print_log("Triangulation will be parallelized.\n");
 #endif
 	// Calculate triangulated surface area for every frame
-	snew(*areas, *nframes);
+	snew(areas->area, areas->nframes);
 	if(flags & LLT_CORRECT) {
-		print_log("Triangulating and correcting %d frames...\n", *nframes);
+		print_log("Triangulating and correcting %d frames...\n", areas->nframes);
+		snew(areas->area1, areas->nframes);
+		snew(areas->area2, areas->nframes);
 
 #ifndef _OPENMP
 		rvec *x2;
-		snew(x2, 2 * *natoms);
+		snew(x2, 2 * areas->natoms);
 #endif
 
-#pragma omp parallel for shared(nframes,areas,x,natoms,flags)
-		for(int i = 0; i < *nframes; ++i) {
+#pragma omp parallel for shared(areas,x,flags)
+		for(int i = 0; i < areas->nframes; ++i) {
 #if defined _OPENMP && defined LLT_DEBUG
 			print_log("%d threads triangulating.\n", omp_get_num_threads());
 #endif
-			real area1, area2;
-
 			// Get area without correction
-			area1 = tri_surface_area(x[i], *natoms, flags);
+			areas->area1[i] = tri_surface_area(x[i], areas->natoms, flags);
 
 			// Correction for periodic bounds
 			rvec *trans_x;
 #ifdef _OPENMP
-			snew(trans_x, 2 * *natoms); // if parallelized, each thread has its own array to write vectors
+			snew(trans_x, 2 * areas->natoms); // if parallelized, each thread has its own array to write vectors
 #else
 			trans_x = x2; // otherwise, all iterations write to the same array
 #endif
-			memcpy(trans_x, x[i], sizeof(rvec) * *natoms);
-			memcpy(trans_x + *natoms, x[i], sizeof(rvec) * *natoms);
+			memcpy(trans_x, x[i], sizeof(rvec) * areas->natoms);
+			memcpy(trans_x + areas->natoms, x[i], sizeof(rvec) * areas->natoms);
 
-			for(int j = *natoms; j < *natoms * 2; ++j) {
+			for(int j = areas->natoms; j < areas->natoms * 2; ++j) {
 				trans_x[j][XX] += box[i][0][0];
 			}
 
 			// Get area with translated image
-			area2 = tri_surface_area(trans_x, 2 * *natoms, flags);
+			areas->area2[i] = tri_surface_area(trans_x, 2 * areas->natoms, flags);
 
 #ifdef _OPENMP
 			sfree(trans_x);
 #endif
 
 			// Corrected area
-			(*areas)[i] = 2 * area2 - 3 * area1;
+			areas->area[i] = 2 * areas->area2[i] - 3 * areas->area1[i];
 		}
 #ifndef _OPENMP
 		sfree(x2);
@@ -100,19 +104,19 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 	}
 	else {
 		sfree(box); // Don't need box if not correcting
-		print_log("Triangulating %d frames...\n", *nframes);
+		print_log("Triangulating %d frames...\n", areas->nframes);
 
-#pragma omp parallel for shared(nframes,areas,x,natoms,flags)
-		for(int i = 0; i < *nframes; ++i) {
+#pragma omp parallel for shared(areas,x,flags)
+		for(int i = 0; i < areas->nframes; ++i) {
 #if defined _OPENMP && defined LLT_DEBUG
 			print_log("%d threads triangulating.\n", omp_get_num_threads());
 #endif
-			(*areas)[i] = tri_surface_area(x[i], *natoms, flags);
+			areas->area[i] = tri_surface_area(x[i], areas->natoms, flags);
 		}
 	}
 
 	// free trajectory
-	for(int i = 0; i < *nframes; ++i) {
+	for(int i = 0; i < areas->nframes; ++i) {
 		sfree(x[i]);
 	}
 	sfree(x);
@@ -170,25 +174,41 @@ real tri_surface_area(rvec *x, int natoms, unsigned char flags) {
 }
 
 
-void print_areas(const char *fname, real *areas, int nframes, int natoms) {
+void print_areas(const char *fname, struct tri_area *areas) {
 	FILE *f = fopen(fname, "w");
 	real sum = 0;
 
-	fprintf(f, "FRAME\tAREA\tAREA/PARTICLE\n");
-	for(int i = 0; i < nframes; ++i) {
-		fprintf(f, "%d\t%f\t%f\n", i, areas[i], areas[i] / natoms);
-		sum += areas[i];
+	if(areas->area1 && areas->area2) { // Corrected for periodic bounding conditions
+		fprintf(f, "FRAME\tAREA1\tAREA2\tCORRECTED-AREA\t\"\"/particle\n");
+		for(int i =0; i < areas->nframes; ++i) {
+			fprintf(f, "%d\t%f\t%f\t%f\t%f\t%f\t%f\n", i, 
+				areas->area1[i], areas->area2[i], areas->area[i],
+				areas->area1[i] / areas->natoms, areas->area2[i] / areas->natoms, areas->area[i] / areas->natoms);
+			sum += areas->area[i];
+		}
+
+		fprintf(f, "\nAverage corrected surface area: %f\n", sum / areas->nframes);
+		print_log("Average corrected surface area: %f\n", sum / areas->nframes);
+
+		fprintf(f, "Average corrected area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
+		print_log("Average corrected area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
+	}
+	else { // Not corrected
+		fprintf(f, "FRAME\tAREA\tAREA/PARTICLE\n");
+		for(int i = 0; i < areas->nframes; ++i) {
+			fprintf(f, "%d\t%f\t%f\n", i, areas->area[i], areas->area[i] / areas->natoms);
+			sum += areas->area[i];
+		}
+
+		fprintf(f, "\nAverage surface area: %f\n", sum / areas->nframes);
+		print_log("Average surface area: %f\n", sum / areas->nframes);
+
+		fprintf(f, "Average area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
+		print_log("Average area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
 	}
 
-	fprintf(f, "\nAverage surface area: %f\n", sum / nframes);
-	print_log("Average surface area: %f\n", sum / nframes);
-
-	fprintf(f, "Average area per particle: %f\n", (sum / nframes) / natoms);
-	print_log("Average area per particle: %f\n", (sum / nframes) / natoms);
-
-	print_log("Surface areas saved to %s\n", fname);
-
 	fclose(f);
+	print_log("Surface areas saved to %s\n", fname);
 }
 
 
@@ -213,4 +233,10 @@ void print_trifiles(struct triangulateio *tio, const char *node_name, const char
 	}
 
 	fclose(ele);
+}
+
+void free_tri_area(struct tri_area *areas) {
+	if(areas->area)		sfree(areas->area);
+	if(areas->area1)	sfree(areas->area1);
+	if(areas->area2)	sfree(areas->area2);
 }

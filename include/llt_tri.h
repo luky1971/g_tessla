@@ -14,20 +14,31 @@
 #endif
 
 
+// Flags
 enum {
-	LLT_CORRECT = 1,
-	LLT_PRINT = 2
+	LLT_CORRECT = 1, // Correct areas for periodic bounding conditions
+	LLT_PRINT = 2 // Print triangle data that can be visualized using, for example, the 'showme' program
 };
 
+// Struct for area output data.
+// These are total surface area, divide a given area by natoms to get area per particle.
+struct tri_area {
+	real *area; // Triangulated areas indexed by [frame #]. *area are corrected areas for periodic bounds if LLT_CORRECT was used.
+	real *area1; // Uncorrected areas, NULL if LLT_CORRECT wasn't used.
+	real *area2; // Triangulated areas of combination of input points with their translated image. NULL if LLT_CORRECT wasn't used.
+	int natoms, nframes; // Number of atoms and number of frames, respectively, that were triangulated.
+};
 
 void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
-	real **areas, int *nframes, int *natoms, unsigned char flags);
+	struct tri_area *areas, unsigned char flags);
 
 real tri_surface_area(rvec *x, int natoms, unsigned char flags);
 
-void print_areas(const char *fname, real *areas, int nframes, int natoms);
+void print_areas(const char *fname, struct tri_area *areas);
 
 void print_trifiles(struct triangulateio *tio, const char *node_name, const char *ele_name);
+
+void free_tri_area(struct tri_area *areas);
 
 
 inline real area_tri(rvec a, rvec b, rvec c) {

@@ -13,7 +13,7 @@
 #endif
 
 /* Struct for a tessellated grid and its associated information */
-struct tessellated_grid{
+struct tessellated_grid {
 	real *weights; // [dimx][dimy][dimz]
 	int *heightmap; // [dimx][dimy]. Holds the z-index of the grid point with the maximum weight for each x-y column
 	real *areas; // [dimx-1][dimy-1]. Holds the triangulated area of each grid cell
