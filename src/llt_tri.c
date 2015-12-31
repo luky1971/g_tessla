@@ -80,9 +80,10 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 #else
 			trans_x = x2; // otherwise, all iterations write to the same array
 #endif
+			// Generate mirror image of particles...
 			memcpy(trans_x, x[i], sizeof(rvec) * areas->natoms);
 			memcpy(trans_x + areas->natoms, x[i], sizeof(rvec) * areas->natoms);
-
+			// ...and translate it by box width
 			for(int j = areas->natoms; j < areas->natoms * 2; ++j) {
 				trans_x[j][XX] += box[i][0][0];
 			}
@@ -94,8 +95,9 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 			sfree(trans_x);
 #endif
 
-			// Corrected area
+			// Corrected area = A1 + 2*(A2 - 2*A1)
 			areas->area[i] = 2 * areas->area2[i] - 3 * areas->area1[i];
+			// areas->area[i] = areas->area1[i] + 2 * (areas->area2[i] - 2 * areas->area1[i]);
 		}
 #ifndef _OPENMP
 		sfree(x2);
