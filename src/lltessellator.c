@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
 
 	gmx_bool dense = FALSE;
 	gmx_bool correct = FALSE;
+	gmx_bool a2D = FALSE;
 	gmx_bool print = FALSE;
 	real cell_width = 0.1;
 	gmx_bool linear = FALSE;
@@ -46,6 +47,7 @@ int main(int argc, char *argv[]) {
 	t_pargs pa[] = {
 		{"-dense", FALSE, etBOOL, {&dense}, "use weighted-grid tessellation instead of frame-by-frame triangulation"},
 		{"-correct", FALSE, etBOOL, {&correct}, "correct triangulation area for periodic bounding conditions (for delaunay triangulation)"},
+		{"-2", FALSE, etBOOL, {&a2D}, "calculate 2D surface area from triangulation"},
 		{"-print", FALSE, etBOOL, {&print}, "save triangles to .node and .ele files (for delaunay triangulation)"},
 		{"-width", FALSE, etREAL, {&cell_width}, "width of each grid cell if using -dense"},
 		{"-lin", FALSE, etBOOL, {&linear}, "use distance instead of distance squared for weighing if using -dense"}
@@ -78,7 +80,7 @@ int main(int argc, char *argv[]) {
 	else {
 		struct tri_area areas;
 
-		unsigned long flags = (int)correct | ((int)print * 2);
+		unsigned long flags = ((int)correct * LLT_CORRECT) | ((int)a2D * LLT_2D) | ((int)print * LLT_PRINT);
 		
 		llt_tri_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, &areas, flags);
 
