@@ -5,7 +5,6 @@
 #ifndef LLT_TRI_H
 #define LLT_TRI_H
 
-#include "triangle.h"
 #include "vec.h"
 #ifdef GRO_V5
 #include "pargs.h"
@@ -41,8 +40,6 @@ real tri_surface_area(rvec *x, int natoms, unsigned char flags, real *a2D);
  */
 
 void print_areas(const char *fname, struct tri_area *areas);
-
-void print_trifiles(struct triangulateio *tio, const char *node_name, const char *ele_name);
 
 void free_tri_area(struct tri_area *areas);
 

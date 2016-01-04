@@ -12,9 +12,12 @@
 #ifdef LLT_BENCH
 #include <time.h>
 #endif
+#include "triangle.h"
 #include "gkut_io.h"
 #include "gkut_log.h"
 #include "smalloc.h"
+
+void print_trifiles(struct triangulateio *tio, const char *node_name, const char *ele_name);
 
 
 void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
