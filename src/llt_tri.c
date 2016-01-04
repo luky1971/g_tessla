@@ -50,6 +50,17 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 	// test filtering
 	print_traj(x, areas->nframes, areas->natoms, "traj.dat");
 #endif
+	
+	FILE *fpp = fopen("points1.pdb", "w");
+
+	for(int i = 0; i < areas->nframes; ++i) {
+		for(int j = 0; j < areas->natoms; ++j) {
+			fprintf(fpp,"\nATOM   %4d  P8  POPC      %11.3f%8.3f%8.3f", j, x[i][j][XX], x[i][j][YY], x[i][j][ZZ]);
+		}
+	}
+
+
+	fclose(fpp);
 
 #ifdef LLT_BENCH
 	clock_t start = clock();
@@ -101,6 +112,24 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 			for(int j = areas->natoms; j < areas->natoms * 2; ++j) {
 				trans_x[j][XX] += box[i][0][0];
 			}
+
+			
+			if(i == 0) {
+				fpp = fopen("points2.pdb", "w");
+
+				for(int j = 0; j < areas->natoms; ++j) {
+					fprintf(fpp,"\nATOM   %4d  P8  POPC      %11.3f%8.3f%8.3f", j, trans_x[j][XX], trans_x[j][YY], trans_x[j][ZZ]);
+				}
+
+				for(int j = areas->natoms; j < areas->natoms * 2; ++j) {
+					fprintf(fpp,"\nATOM   %4d  N4  POPC      %11.3f%8.3f%8.3f", j, trans_x[j][XX], trans_x[j][YY], trans_x[j][ZZ]);
+				}
+			}
+
+
+				fclose(fpp);
+			}		
+
 
 			// Get area with translated image
 			areas->area2[i] = tri_surface_area(trans_x, 2 * areas->natoms, flags, NULL);
