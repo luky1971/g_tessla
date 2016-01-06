@@ -124,11 +124,10 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 				for(int j = areas->natoms; j < areas->natoms * 2; ++j) {
 					fprintf(fpp,"\nATOM   %4d  N4  POPC      %11.3f%8.3f%8.3f", j, trans_x[j][XX], trans_x[j][YY], trans_x[j][ZZ]);
 				}
-			}
-
 
 				fclose(fpp);
-			}		
+			}
+					
 
 
 			// Get area with translated image
