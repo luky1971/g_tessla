@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
 	const char *fnames[efT_NUMFILES];
 	output_env_t oenv = NULL;
 
+	gmx_bool nopar = FALSE;
 	gmx_bool dense = FALSE;
 	gmx_bool correct = FALSE;
 	gmx_bool a2D = FALSE;
@@ -45,6 +46,7 @@ int main(int argc, char *argv[]) {
 	};
 
 	t_pargs pa[] = {
+		{"-nopar", FALSE, etBOOL, {&nopar}, "prevent multithreading"},
 		{"-dense", FALSE, etBOOL, {&dense}, "use weighted-grid tessellation instead of frame-by-frame triangulation"},
 		{"-correct", FALSE, etBOOL, {&correct}, "correct triangulation area for periodic bounding conditions (for delaunay triangulation)"},
 		{"-2", FALSE, etBOOL, {&a2D}, "calculate 2D surface area from triangulation"},
@@ -80,7 +82,7 @@ int main(int argc, char *argv[]) {
 	else {
 		struct tri_area areas;
 
-		unsigned long flags = ((int)correct * LLT_CORRECT) | ((int)a2D * LLT_2D) | ((int)print * LLT_PRINT);
+		unsigned long flags = ((int)nopar * LLT_NOPAR) | ((int)correct * LLT_CORRECT) | ((int)a2D * LLT_2D) | ((int)print * LLT_PRINT);
 		
 		llt_tri_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, &areas, flags);
 

@@ -56,7 +56,8 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 #endif
 
 #ifdef _OPENMP
-	print_log("Triangulation will be parallelized.\n");
+	if(!(flags & LLT_NOPAR))
+		print_log("Triangulation will be parallelized.\n");
 #endif
 	// Calculate triangulated surface area for every frame
 	snew(areas->area, areas->nframes);
@@ -73,7 +74,7 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 		snew(x2, 2 * areas->natoms);
 #endif
 
-#pragma omp parallel for shared(areas,x,flags)
+#pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
 		for(int i = 0; i < areas->nframes; ++i) {
 #if defined _OPENMP && defined LLT_DEBUG
 			print_log("%d threads triangulating.\n", omp_get_num_threads());
@@ -120,7 +121,7 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 	else {
 		print_log("Triangulating %d frames...\n", areas->nframes);
 
-#pragma omp parallel for shared(areas,x,flags)
+#pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
 		for(int i = 0; i < areas->nframes; ++i) {
 #if defined _OPENMP && defined LLT_DEBUG
 			print_log("%d threads triangulating.\n", omp_get_num_threads());
