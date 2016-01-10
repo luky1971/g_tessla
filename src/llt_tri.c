@@ -98,6 +98,7 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 			// Generate mirror image of particles...
 			memcpy(trans_x, x[i], sizeof(rvec) * areas->natoms);
 			memcpy(trans_x + areas->natoms, x[i], sizeof(rvec) * areas->natoms);
+			sfree(x[i]); // (done with this frame's original data)
 			// ...and translate it by box width
 			for(int j = areas->natoms; j < areas->natoms * 2; ++j) {
 				trans_x[j][XX] += box[i][0][0];
@@ -132,13 +133,10 @@ void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *o
 			real *a2D = NULL;
 			if(flags & LLT_2D)	a2D = &(areas->area2D[i]);
 			areas->area[i] = tri_surface_area(x[i], areas->natoms, flags, a2D);
+			sfree(x[i]);
 		}
 	}
-
-	// free memory
-	for(int i = 0; i < areas->nframes; ++i) {
-		sfree(x[i]);
-	}
+	
 	sfree(x);
 	sfree(box);
 
