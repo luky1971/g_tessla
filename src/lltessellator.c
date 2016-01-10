@@ -80,6 +80,8 @@ int main(int argc, char *argv[]) {
 		free_grid(&grid);
 	}
 	else {
+		if(print)	nopar = TRUE;
+
 		struct tri_area areas;
 
 		unsigned long flags = ((int)nopar * LLT_NOPAR) | ((int)correct * LLT_CORRECT) | ((int)a2D * LLT_2D) | ((int)print * LLT_PRINT);
