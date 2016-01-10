@@ -45,7 +45,7 @@ void print_areas(const char *fname, struct tri_area *areas);
 void free_tri_area(struct tri_area *areas);
 
 
-inline real area_tri(rvec a, rvec b, rvec c) {
+static inline real area_tri(rvec a, rvec b, rvec c) {
 	rvec ab, ac, cpr;
 	rvec_sub(b, a, ab);
 	rvec_sub(c, a, ac);
