@@ -1,9 +1,12 @@
 # lltessellator
 
-lltessellator (leaflet tessellator) reads a trajectory file and tessellates its coordinates in a fixed 3D grid, calculating the surface area of the tessellation. It requires Gromacs to be installed.
+lltessellator (leaflet tessellator) reads a trajectory file and calculates every frame's 3D surface area by tessellating the coordinates along the horizontal plane. It requires Gromacs to be installed.
 
 ### Copyright 
 (c) 2015 Ahnaf Siddiqui and Sameer Varma
+
+lltessellator uses the Triangle library to perform Delaunay triangulation.
+Copyright (c) 1993, 1995, 1997, 1998, 2002, 2005, Jonathan Richard Shewchuk.
 
 lltessellator uses the GROMACS molecular simulation package library,  
 Copyright (c) 1991-2000, University of Groningen, The Netherlands.  
