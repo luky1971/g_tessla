@@ -84,7 +84,10 @@ int main(int argc, char *argv[]) {
 
 		struct tri_area areas;
 
-		unsigned long flags = ((int)nopar * LLT_NOPAR) | ((int)correct * LLT_CORRECT) | ((int)a2D * LLT_2D) | ((int)print * LLT_PRINT);
+		unsigned long flags = ((int)nopar * LLT_NOPAR) 
+							| ((int)correct * LLT_CORRECT) 
+							| ((int)a2D * LLT_2D) 
+							| ((int)print * LLT_PRINT);
 		
 		llt_tri_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, &areas, flags);
 

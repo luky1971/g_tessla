@@ -32,6 +32,20 @@ struct tri_area {
 	int natoms, nframes; // Number of atoms and number of frames, respectively, that were triangulated.
 };
 
+
+void llt_delaunay_area(	const char *traj_fname, 
+						const char *ndx_fname, 
+						output_env_t *oenv, 
+						struct tri_area *areas, 
+						unsigned char flags);
+
+void delaunay_surface_area(	rvec *x, 
+							int natoms, 
+							unsigned char flags,
+							real *a2D,
+							real *a3D);
+
+
 void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
 	struct tri_area *areas, unsigned char flags);
 

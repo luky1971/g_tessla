@@ -16,9 +16,69 @@
 #include "gkut_io.h"
 #include "gkut_log.h"
 #include "smalloc.h"
+#include "delaunay_tri.h"
 
 void print_trifiles(struct triangulateio *tio, const char *node_name, const char *ele_name);
 
+
+void llt_delaunay_area(	const char *traj_fname, 
+						const char *ndx_fname, 
+						output_env_t *oenv, 
+						struct tri_area *areas, 
+						unsigned char flags) {
+	rvec **pre_x, **x;
+	matrix *box;
+
+	areas->area = NULL;
+	areas->area2D = NULL;
+	areas->area2Dbox = NULL;
+	areas->area1 = NULL;
+	areas->area2 = NULL;
+
+	read_traj(traj_fname, &pre_x, &box, &(areas->nframes), &(areas->natoms), oenv);
+
+	// Filter trajectory by index file if present
+	if(ndx_fname != NULL) {
+		ndx_filter_traj(ndx_fname, pre_x, &x, areas->nframes, &(areas->natoms));
+
+		for(int i = 0; i < areas->nframes; ++i) {
+			sfree(pre_x[i]);
+		}
+		sfree(pre_x);
+	}
+	else {
+		x = pre_x;
+	}
+
+
+	//
+}
+
+void delaunay_surface_area(	rvec *x, 
+							int natoms, 
+							unsigned char flags,
+							real *a2D,
+							real *a3D) {
+	struct dTriangulation tri;
+
+	// Input initialization
+	snew(tri.points, 2 * natoms);
+	tri.npoints = natoms;
+
+	for(int i = 0; i < natoms; ++i) {
+		tri.points[2*i] = x[i][XX];
+		tri.points[2*i+1] = x[i][YY];
+	}
+
+	// triangulate
+	dtriangulate(&tri);
+
+	sfree(tri.points);
+
+	// TODO: calculate surface area of triangles
+
+	free(tri.triangles);
+}
 
 void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
 	struct tri_area *areas, unsigned char flags) {
