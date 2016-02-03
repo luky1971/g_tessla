@@ -1,6 +1,7 @@
 cc ?= gcc
-CFLAGS += -std=c99 -O3
+# CFLAGS += -std=c99 -O3
 # CFLAGS += -std=c99 -DLLT_DEBUG
+CFLAGS += -std=c99 -g
 
 GROMACS = /usr/local/gromacs
 VGRO = 5
@@ -40,10 +41,10 @@ MCFLAGS +='
 
 .PHONY: install clean
 
-$(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o
+$(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o $(BUILD)/delaunay_tri.o
 	make cc=$(cc) CFLAGS=$(MCFLAGS) GROMACS=$(GROMACS) VGRO=$(VGRO) -C $(GKUT) \
 	&& make cc=$(cc) trilibrary -C $(TRI) \
-	&& $(cc) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o \
+	&& $(cc) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o $(BUILD)/delaunay_tri.o \
 	$(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(TRI)/triangle.o $(LINKGRO) $(LIBGRO) $(LIBS)
 
 install: $(BUILD)/lltessellator
@@ -53,13 +54,16 @@ $(BUILD)/lltessellator.o: $(SRC)/lltessellator.c $(INCLUDE)/llt_grid.h $(INCLUDE
 	$(cc) $(CFLAGS) -o $(BUILD)/lltessellator.o -c $(SRC)/lltessellator.c \
 	$(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include -I$(TRI)
 
-$(BUILD)/llt_tri.o: $(SRC)/llt_tri.c $(INCLUDE)/llt_tri.h
+$(BUILD)/llt_tri.o: $(SRC)/llt_tri.c $(INCLUDE)/llt_tri.h $(INCLUDE)/delaunay_tri.h
 	$(cc) $(CFLAGS) -o $(BUILD)/llt_tri.o -c $(SRC)/llt_tri.c \
 	$(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include -I$(TRI)
 
 $(BUILD)/llt_grid.o: $(SRC)/llt_grid.c $(INCLUDE)/llt_grid.h
 	$(cc) $(CFLAGS) -o $(BUILD)/llt_grid.o -c $(SRC)/llt_grid.c \
 	$(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include
+
+$(BUILD)/delaunay_tri.o: $(SRC)/delaunay_tri.c $(INCLUDE)/delaunay_tri.h
+	$(cc) $(CFLAGS) -o $(BUILD)/delaunay_tri.o -c $(SRC)/delaunay_tri.c -I$(INCLUDE)
 
 clean:
 	make clean -C $(GKUT) && make distclean -C $(TRI) && rm -f $(BUILD)/*.o $(BUILD)/lltessellator

@@ -1,8 +1,16 @@
 /*
  * Copyright Ahnaf Siddiqui and Sameer Varma.
+ *
+ * Delaunay triangulation implementation based on the algorithms presented in
+ * "Two Algorithms for Constructing the Delaunay Triangulation," 
+ 	International Journal of Computer and Information Science 9(3):219-242, 1980
+ * and
+ * "Primitives for the Manipulation of General Subdivisions and the Computation of Voronoi Diagrams," 
+ 	ACM Transactions on Graphics 4(2):74-123, April 1985
+ *
  */
 
-typedef dtreal double; // test performance and accuracy of double vs float
+typedef double dtreal; // test performance and accuracy of double vs float
 
 
 struct dTriangulation {

@@ -89,11 +89,11 @@ int main(int argc, char *argv[]) {
 							| ((int)a2D * LLT_2D) 
 							| ((int)print * LLT_PRINT);
 		
-		llt_tri_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, &areas, flags);
+		llt_delaunay_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, &areas, flags);
 
-		print_areas(fnames[efT_OUTDAT], &areas);
+		// print_areas(fnames[efT_OUTDAT], &areas);
 
-		free_tri_area(&areas);
+		// free_tri_area(&areas);
 	}
 
 #ifdef LLT_BENCH

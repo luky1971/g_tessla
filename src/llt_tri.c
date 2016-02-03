@@ -50,8 +50,10 @@ void llt_delaunay_area(	const char *traj_fname,
 		x = pre_x;
 	}
 
+	delaunay_surface_area(x[0], areas->natoms, flags, &(areas->area2D[0]), &(areas->area[0]));
 
-	//
+	sfree(x);
+	sfree(box);
 }
 
 void delaunay_surface_area(	rvec *x, 
@@ -77,7 +79,7 @@ void delaunay_surface_area(	rvec *x,
 
 	// TODO: calculate surface area of triangles
 
-	free(tri.triangles);
+	// free(tri.triangles);
 }
 
 void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
