@@ -1,11 +1,16 @@
 /*
  * Copyright Ahnaf Siddiqui and Sameer Varma.
  *
- * Delaunay triangulation implementation based on the algorithms presented in
- * "Two Algorithms for Constructing the Delaunay Triangulation," 
+ * Delaunay triangulation implementation based on the algorithms presented by
+ *
+ * 	Der-Tsai Lee and Bruce J. Schachter, 
+ 	"Two Algorithms for Constructing the Delaunay Triangulation," 
 	International Journal of Computer and Information Science 9(3):219-242, 1980
+ *
  * and
- * "Primitives for the Manipulation of General Subdivisions and the Computation of Voronoi Diagrams," 
+ *
+ * 	Leonidas J. Guibas and Jorge Stolfi, 
+	"Primitives for the Manipulation of General Subdivisions and the Computation of Voronoi Diagrams," 
 	ACM Transactions on Graphics 4(2):74-123, April 1985
  *
  */
@@ -60,7 +65,16 @@ static void lct(const struct vert *lrightmost,
 				struct vert **lctleft, 
 				struct vert **lctright);
 
-static void ord_dtriangulate(struct vert *v, int ia, int ib);
+static void uct(const struct vert *lrightmost, 
+				const struct vert *rleftmost, 
+				struct vert **uctleft, 
+				struct vert **uctright);
+
+static void ord_dtriangulate(	struct vert *v, 
+								int ia, 
+								int ib, 
+								struct vert **leftmost,
+								struct vert **rightmost);
 
 
 static struct dTriangulation *mtri;
@@ -195,14 +209,65 @@ static struct vert *succ(	const struct vert *vi,
 	return NULL;
 }
 
+// Lower common tangent of two convex hulls
+// TODO: what happens in edge cases? (ex. given hulls have 2 or less points)
 static void lct(const struct vert *lrightmost, 
 				const struct vert *rleftmost, 
 				struct vert **lctleft, 
 				struct vert **lctright) {
-	struct vert *za = first(rleftmost);
-	struct vert *zb = first(lrightmost);
-	struct vert *zc = pred(lrightmost, zb);
-	// TODO
+	struct vert *x = lrightmost;
+	struct vert *y = rleftmost;
+	struct vert *rfast = first(y);
+	struct vert *lfast = pred(x, first(x));
+	struct vert *temp;
+
+	while(true) {
+		if(rightOf(rfast, x, y)) {
+			temp = rfast;
+			rfast = succ(rfast, y);
+			y = temp;
+		}
+		else if(rightOf(lfast, x, y)) {
+			temp = lfast
+			lfast = pred(lfast, x);
+			x = temp;
+		}
+		else {
+			*lctleft = x;
+			*lctright = y;
+			break;
+		}
+	}
+}
+
+// Upper common tangent of two convex hulls
+static void uct(const struct vert *lrightmost, 
+				const struct vert *rleftmost, 
+				struct vert **uctleft, 
+				struct vert **uctright) {
+	struct vert *x = lrightmost;
+	struct vert *y = rleftmost;
+	struct vert *lfast = first(x);
+	struct vert *rfast = pred(y, first(y));
+	struct vert *temp;
+
+	while(true) {
+		if(leftOf(rfast, x, y)) {
+			temp = rfast;
+			rfast = pred(rfast, y);
+			y = temp;
+		}
+		else if(leftOf(lfast, x, y)) {
+			temp = lfast;
+			lfast = succ(lfast, x);
+			x = temp;
+		}
+		else {
+			*uctleft = x;
+			*uctright = y;
+			break;
+		}
+	}
 }
 
 
@@ -218,6 +283,7 @@ void dtriangulate(struct dTriangulation *tri) {
 	}
 
 	// sort vertices lexicographically by point coordinates
+	// TODO: remove duplicate points! (within DTEPSILON range)
 	qsort(v, mtri->npoints, sizeof(struct vert), compareVerts);
 
 	// DEBUG
@@ -238,13 +304,18 @@ void dtriangulate(struct dTriangulation *tri) {
 	//
 
 	// triangulate the sorted points
-	ord_dtriangulate(v, 0, mtri->npoints - 1);
+	struct vert *l, *r;
+	ord_dtriangulate(v, 0, mtri->npoints - 1, &l, &r);
 
 	// TODO: free vertnodes in adjacency lists!
 	free(v);
 }
 
-static void ord_dtriangulate(struct vert *v, int ia, int ib) {
+static void ord_dtriangulate(	struct vert *v, 
+								int ia, 
+								int ib, 
+								struct vert **leftmost,
+								struct vert **rightmost) {
 	if(ia >= ib)
 		return;
 	if(ib - ia == 1) {
@@ -254,8 +325,18 @@ static void ord_dtriangulate(struct vert *v, int ia, int ib) {
 		// num points = 3. Handle this base case
 	}
 	else {
+		struct vert *lo, *li, *ri, *ro;
+		struct vert *lctl, *lctr;
 		int mid = (ia + ib) / 2;
-		ord_dtriangulate(v, ia, mid);
-		ord_dtriangulate(v, mid + 1, ib);
+
+		ord_dtriangulate(v, ia, mid, &lo, &li);
+		ord_dtriangulate(v, mid + 1, ib, &ri, &ro);
+
+		lct(li, ri, &lctl, &lctr);
+
+
+
+		*leftmost = lo;
+		*rightmost = ro;
 	}
 }

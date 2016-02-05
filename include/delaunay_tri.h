@@ -1,12 +1,17 @@
 /*
  * Copyright Ahnaf Siddiqui and Sameer Varma.
  *
- * Delaunay triangulation implementation based on the algorithms presented in
- * "Two Algorithms for Constructing the Delaunay Triangulation," 
- 	International Journal of Computer and Information Science 9(3):219-242, 1980
+ * Delaunay triangulation implementation based on the algorithms presented by
+ *
+ * 	Der-Tsai Lee and Bruce J. Schachter, 
+ 	"Two Algorithms for Constructing the Delaunay Triangulation," 
+	International Journal of Computer and Information Science 9(3):219-242, 1980
+ *
  * and
- * "Primitives for the Manipulation of General Subdivisions and the Computation of Voronoi Diagrams," 
- 	ACM Transactions on Graphics 4(2):74-123, April 1985
+ *
+ * 	Leonidas J. Guibas and Jorge Stolfi, 
+	"Primitives for the Manipulation of General Subdivisions and the Computation of Voronoi Diagrams," 
+	ACM Transactions on Graphics 4(2):74-123, April 1985
  *
  */
 
