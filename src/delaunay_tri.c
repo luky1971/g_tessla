@@ -41,25 +41,31 @@ static dtreal YY(const struct vert *v);
 
 int compareVerts(const void *a, const void *b);
 
-static bool ccw(const struct vert *a,
-				const struct vert *b,
+static bool ccw(const struct vert *a, 
+				const struct vert *b, 
 				const struct vert *c);
 static bool rightOf(const struct vert *x, 
 					const struct vert *ea, 
 					const struct vert *eb);
-static bool leftOf(	const struct vert *x,
-					const struct vert *ea,
+static bool leftOf(	const struct vert *x, 
+					const struct vert *ea, 
 					const struct vert *eb);
 static bool inCircle(	const struct vert *a, 
 						const struct vert *b, 
 						const struct vert *c, 
 						const struct vert *d);
 
+static void insertAfter(struct vertNode *n, struct vertNode *in);
+static void insert(struct vert *parent, struct vert *in);
+
+static void connect(struct vert *a, struct vert *b);
+
 static struct vert *first(const struct vert *vi);
 static struct vert *pred(	const struct vert *vi, 
 							const struct vert *vj);
 static struct vert *succ(	const struct vert *vi, 
 							const struct vert *vj);
+
 static void lct(const struct vert *lrightmost, 
 				const struct vert *rleftmost, 
 				struct vert **lctleft, 
@@ -73,7 +79,7 @@ static void uct(const struct vert *lrightmost,
 static void ord_dtriangulate(	struct vert *v, 
 								int ia, 
 								int ib, 
-								struct vert **leftmost,
+								struct vert **leftmost, 
 								struct vert **rightmost);
 
 
@@ -101,8 +107,8 @@ int compareVerts(const void *a, const void *b) {
 }
 
 
-static bool ccw(const struct vert *a,
-				const struct vert *b,
+static bool ccw(const struct vert *a, 
+				const struct vert *b, 
 				const struct vert *c) {
 	dtreal xa = XX(a);
 	dtreal ya = YY(a);
@@ -120,8 +126,8 @@ static bool rightOf(const struct vert *x,
 	return ccw(x, eb, ea);
 }
 
-static bool leftOf(	const struct vert *x,
-					const struct vert *ea,
+static bool leftOf(	const struct vert *x, 
+					const struct vert *ea, 
 					const struct vert *eb) {
 	return ccw(x, ea, eb);
 }
@@ -158,6 +164,57 @@ static bool inCircle(	const struct vert *a,
 	m[0][2] * m[1][0] * m[2][1] - m[0][0] * m[1][2] * m[2][1] -
 	m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2]) > 0;
 }
+
+
+static inline void insertAfter(struct vertNode *n, struct vertNode *in) {
+	struct vertNode *temp = n->next;
+	n->next = in;
+	temp->prev = in;
+	in->prev = n;
+	in->next = temp;
+}
+
+static void insert(struct vert *parent, struct vert *in) {
+	struct vertNode *vn = (struct vertNode*)malloc(sizeof(struct vertNode));
+	vn->v = in;
+
+	if(parent->adj) { // if parent already has neighbors, then insert in proper position
+		struct vertNode *cur, *temp;
+		if(rightOf(in, parent, parent->adj->v)) {
+			cur = parent->adj->prev;
+			while(cur != parent->adj && rightOf(in, parent, cur->v)) {
+				cur = cur->prev;
+			}
+			if(cur == parent->adj) { // then in-vertex is convex hull successor of parent
+				parent->adj = vn; // so make in-vertex "first"
+				insertAfter(cur->prev, vn);
+			}
+			else {
+				insertAfter(cur, vn);
+			}
+		}
+		else {
+			cur = parent->adj->next;
+			while(cur != parent->adj && leftOf(in, parent, cur->v)) {
+				cur = cur->next;
+			}
+			insertAfter(cur->prev, vn);
+		}
+	}
+	else { // if parent has no neighbors, add this node and make it a circular list
+		parent->adj = vn;
+		vn->prev = vn;
+		vn->next = vn;
+	}
+}
+
+static void connect(struct vert *a, struct vert *b) {
+	if(a && b) {
+		insert(a, b);
+		insert(b, a);
+	}
+}
+
 
 static inline struct vert *first(const struct vert *vi) {
 	if(vi && vi->adj)
@@ -208,6 +265,7 @@ static struct vert *succ(	const struct vert *vi,
 	}
 	return NULL;
 }
+
 
 // Lower common tangent of two convex hulls
 // TODO: what happens in edge cases? (ex. given hulls have 2 or less points)
@@ -314,7 +372,7 @@ void dtriangulate(struct dTriangulation *tri) {
 static void ord_dtriangulate(	struct vert *v, 
 								int ia, 
 								int ib, 
-								struct vert **leftmost,
+								struct vert **leftmost, 
 								struct vert **rightmost) {
 	if(ia >= ib)
 		return;
@@ -326,15 +384,23 @@ static void ord_dtriangulate(	struct vert *v,
 	}
 	else {
 		struct vert *lo, *li, *ri, *ro;
-		struct vert *lctl, *lctr;
+		struct vert *lctl, *lctr, *uctl, *uctr;
 		int mid = (ia + ib) / 2;
 
+		// triangulate two halves of point set
 		ord_dtriangulate(v, ia, mid, &lo, &li);
 		ord_dtriangulate(v, mid + 1, ib, &ri, &ro);
 
+		// get lower and upper common tangents between the two halves
 		lct(li, ri, &lctl, &lctr);
+		uct(li, ri, &uctl, &uctr);
 
-
+		// merge the two halves
+		li = lctl;
+		ri = lctr;
+		while(li != uctl || ri != uctr) {
+			//
+		}
 
 		*leftmost = lo;
 		*rightmost = ro;
