@@ -32,7 +32,7 @@ struct vert {
 
 struct vertNode {
 	struct vert *v;
-	struct vertNode *prev, *next;
+	struct vertNode *prev, *next; // TODO: make more memory efficient ex. xor linked list
 };
 
 
@@ -55,10 +55,12 @@ static bool inCircle(	const struct vert *a,
 						const struct vert *c, 
 						const struct vert *d);
 
-static void insertAfter(struct vertNode *n, struct vertNode *in);
-static void insert(struct vert *parent, struct vert *in);
+static void insertNodeAfter(struct vertNode *n, struct vertNode *in);
+static void insertNode(struct vert *parent, struct vert *in);
+static void deleteNode(struct vert *parent, struct vert *child);
 
-static void connect(struct vert *a, struct vert *b);
+static void connectVerts(struct vert *a, struct vert *b);
+static void cutVerts(struct vert *a, struct vert *b);
 
 static struct vert *first(const struct vert *vi);
 static struct vert *pred(	const struct vert *vi, 
@@ -66,13 +68,13 @@ static struct vert *pred(	const struct vert *vi,
 static struct vert *succ(	const struct vert *vi, 
 							const struct vert *vj);
 
-static void lct(const struct vert *lrightmost, 
-				const struct vert *rleftmost, 
+static void lct(struct vert *lrightmost, 
+				struct vert *rleftmost, 
 				struct vert **lctleft, 
 				struct vert **lctright);
 
-static void uct(const struct vert *lrightmost, 
-				const struct vert *rleftmost, 
+static void uct(struct vert *lrightmost, 
+				struct vert *rleftmost, 
 				struct vert **uctleft, 
 				struct vert **uctright);
 
@@ -117,7 +119,7 @@ static bool ccw(const struct vert *a,
 	dtreal xc = XX(c);
 	dtreal yc = YY(c);
 
-	return (xa * (yb - yc) - ya * (xb - xc) + xb * yc - yb * xc) > 0;
+	return (xa * (yb - yc) - ya * (xb - xc) + xb * yc - yb * xc) > 0; // TODO: should use epsilon here?
 }
 
 static bool rightOf(const struct vert *x, 
@@ -162,11 +164,11 @@ static bool inCircle(	const struct vert *a,
 	m[0][1] * m[1][0] * m[3][2] - m[0][0] * m[1][1] * m[3][2] -
 	m[0][2] * m[1][1] * m[2][0] + m[0][1] * m[1][2] * m[2][0] +
 	m[0][2] * m[1][0] * m[2][1] - m[0][0] * m[1][2] * m[2][1] -
-	m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2]) > 0;
+	m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2]) > 0; // TODO: should use epsilon here?
 }
 
 
-static inline void insertAfter(struct vertNode *n, struct vertNode *in) {
+static inline void insertNodeAfter(struct vertNode *n, struct vertNode *in) {
 	struct vertNode *temp = n->next;
 	n->next = in;
 	temp->prev = in;
@@ -174,7 +176,7 @@ static inline void insertAfter(struct vertNode *n, struct vertNode *in) {
 	in->next = temp;
 }
 
-static void insert(struct vert *parent, struct vert *in) {
+static void insertNode(struct vert *parent, struct vert *in) {
 	struct vertNode *vn = (struct vertNode*)malloc(sizeof(struct vertNode));
 	vn->v = in;
 
@@ -187,10 +189,10 @@ static void insert(struct vert *parent, struct vert *in) {
 			}
 			if(cur == parent->adj) { // then in-vertex is convex hull successor of parent
 				parent->adj = vn; // so make in-vertex "first"
-				insertAfter(cur->prev, vn);
+				insertNodeAfter(cur->prev, vn);
 			}
 			else {
-				insertAfter(cur, vn);
+				insertNodeAfter(cur, vn);
 			}
 		}
 		else {
@@ -198,7 +200,7 @@ static void insert(struct vert *parent, struct vert *in) {
 			while(cur != parent->adj && leftOf(in, parent, cur->v)) {
 				cur = cur->next;
 			}
-			insertAfter(cur->prev, vn);
+			insertNodeAfter(cur->prev, vn);
 		}
 	}
 	else { // if parent has no neighbors, add this node and make it a circular list
@@ -208,10 +210,34 @@ static void insert(struct vert *parent, struct vert *in) {
 	}
 }
 
-static void connect(struct vert *a, struct vert *b) {
+static void deleteNode(struct vert *parent, struct vert *child) {
+	struct vertNode *vn = parent->adj;
+	if(vn) {
+		do {
+			if(vn->v == child) {
+				vn->prev->next = vn->next;
+				vn->next->prev = vn->prev;
+				if(vn == parent->adj) {
+					parent->adj = vn->next;
+				}
+				free(vn);
+			}
+			vn = vn->next;
+		} while(vn && vn != parent->adj);
+	}
+}
+
+static void connectVerts(struct vert *a, struct vert *b) {
 	if(a && b) {
-		insert(a, b);
-		insert(b, a);
+		insertNode(a, b);
+		insertNode(b, a);
+	}
+}
+
+static void cutVerts(struct vert *a, struct vert *b) {
+	if(a && b) {
+		deleteNode(a, b);
+		deleteNode(b, a);
 	}
 }
 
@@ -269,8 +295,8 @@ static struct vert *succ(	const struct vert *vi,
 
 // Lower common tangent of two convex hulls
 // TODO: what happens in edge cases? (ex. given hulls have 2 or less points)
-static void lct(const struct vert *lrightmost, 
-				const struct vert *rleftmost, 
+static void lct(struct vert *lrightmost, 
+				struct vert *rleftmost, 
 				struct vert **lctleft, 
 				struct vert **lctright) {
 	struct vert *x = lrightmost;
@@ -286,7 +312,7 @@ static void lct(const struct vert *lrightmost,
 			y = temp;
 		}
 		else if(rightOf(lfast, x, y)) {
-			temp = lfast
+			temp = lfast;
 			lfast = pred(lfast, x);
 			x = temp;
 		}
@@ -299,8 +325,8 @@ static void lct(const struct vert *lrightmost,
 }
 
 // Upper common tangent of two convex hulls
-static void uct(const struct vert *lrightmost, 
-				const struct vert *rleftmost, 
+static void uct(struct vert *lrightmost, 
+				struct vert *rleftmost, 
 				struct vert **uctleft, 
 				struct vert **uctright) {
 	struct vert *x = lrightmost;
@@ -369,20 +395,30 @@ void dtriangulate(struct dTriangulation *tri) {
 	free(v);
 }
 
+// triangulates given vertices assuming that they are lexicographically ordered
+// primarily by increasing x-coordinate and secondarily by increasing y-coordinate
 static void ord_dtriangulate(	struct vert *v, 
 								int ia, 
 								int ib, 
 								struct vert **leftmost, 
 								struct vert **rightmost) {
-	if(ia >= ib)
-		return;
 	if(ib - ia == 1) {
 		// num points = 2. Handle this base case
+		connectVerts(&v[ia], &v[ib]);
+		*leftmost = &v[ia];
+		*rightmost = &v[ib];
 	}
 	else if(ib - ia == 2) {
 		// num points = 3. Handle this base case
+		connectVerts(&v[ia], &v[ia + 1]);
+		connectVerts(&v[ia + 1], &v[ib]);
+		if(ccw(&v[ia], &v[ia + 1], &v[ib]) || ccw(&v[ia], &v[ib], &v[ia + 1])) {
+			connectVerts(&v[ia], &v[ib]);
+		} // else, the three points are collinear, so don't connect the first and third point
+		*leftmost = &v[ia];
+		*rightmost = &v[ib];
 	}
-	else {
+	else if(ib - ia >= 3) { // num points >= 4
 		struct vert *lo, *li, *ri, *ro;
 		struct vert *lctl, *lctr, *uctl, *uctr;
 		int mid = (ia + ib) / 2;
@@ -398,11 +434,55 @@ static void ord_dtriangulate(	struct vert *v,
 		// merge the two halves
 		li = lctl;
 		ri = lctr;
-		while(li != uctl || ri != uctr) {
-			//
+		bool a, b;
+		struct vert *l1, *l2, *r1, *r2;
+		while(li != uctl || ri != uctr) { // connect from bottom to top
+			a = false, b = false;
+			connectVerts(li, ri);
+
+			r1 = pred(ri, li);
+			if(leftOf(r1, li, ri)) {
+				r2 = pred(ri, r1);
+				while(inCircle(r1, li, ri, r2)) {
+					cutVerts(ri, r1);
+					r1 = r2;
+					r2 = pred(ri, r1);
+				}
+			}
+			else {
+				a = true;
+			}
+
+			l1 = succ(li, ri);
+			if(rightOf(l1, ri, li)) {
+				l2 = succ(li, l1);
+				while(inCircle(li, ri, l1, l2)) {
+					cutVerts(li, l1);
+					l1 = l2;
+					l2 = succ(li, l1);
+				}
+			}
+			else {
+				b = true;
+			}
+
+			if(a) {
+				li = l1;
+			}
+			else if(b) {
+				ri = r1;
+			}
+			else if(!inCircle(li, ri, r1, l1)) {
+				ri = r1;
+			}
+			else {
+				li = l1;
+			}
 		}
+		connectVerts(uctl, uctr); // connect the top
 
 		*leftmost = lo;
 		*rightmost = ro;
 	}
+	// else, num points <=1; invalid input so do nothing
 }
