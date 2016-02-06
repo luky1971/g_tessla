@@ -119,7 +119,7 @@ static bool ccw(const struct vert *a,
 	dtreal xc = XX(c);
 	dtreal yc = YY(c);
 
-	return (xa * (yb - yc) - ya * (xb - xc) + xb * yc - yb * xc) > 0; // TODO: should use epsilon here?
+	return (xa * (yb - yc) - ya * (xb - xc) + xb * yc - yb * xc) > DTEPSILON;
 }
 
 static bool rightOf(const struct vert *x, 
@@ -164,7 +164,7 @@ static bool inCircle(	const struct vert *a,
 	m[0][1] * m[1][0] * m[3][2] - m[0][0] * m[1][1] * m[3][2] -
 	m[0][2] * m[1][1] * m[2][0] + m[0][1] * m[1][2] * m[2][0] +
 	m[0][2] * m[1][0] * m[2][1] - m[0][0] * m[1][2] * m[2][1] -
-	m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2]) > 0; // TODO: should use epsilon here?
+	m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2]) > DTEPSILON;
 }
 
 
@@ -218,9 +218,15 @@ static void deleteNode(struct vert *parent, struct vert *child) {
 				vn->prev->next = vn->next;
 				vn->next->prev = vn->prev;
 				if(vn == parent->adj) {
-					parent->adj = vn->next;
+					if(vn->next == vn) { // there was only one node in list
+						parent->adj = NULL; // so now there will be zero
+					}
+					else {
+						parent->adj = vn->next;
+					}
 				}
 				free(vn);
+				break;
 			}
 			vn = vn->next;
 		} while(vn && vn != parent->adj);
@@ -391,7 +397,28 @@ void dtriangulate(struct dTriangulation *tri) {
 	struct vert *l, *r;
 	ord_dtriangulate(v, 0, mtri->npoints - 1, &l, &r);
 
+	// TODO: convert the triangulation into triangle list and store in tri->triangles
+
+	// DEBUG
+	FILE *f = fopen("adj.txt", "w");
+
+	for(int i = 0; i < mtri->npoints; ++i) {
+		fprintf(f, "%f, %f: ", XX(&v[i]), YY(&v[i]));
+		if(v[i].adj) {
+			struct vertNode *n = v[i].adj;
+			do {
+				fprintf(f, "%f, %f; ", XX(n->v), YY(n->v));
+				n = n->next;
+			} while(n && n != v[i].adj);
+			fprintf(f, "\n");
+		}
+	}
+
+	fclose(f);
+	//
+
 	// TODO: free vertnodes in adjacency lists!
+	// (just loop through v and for each v, free all nodes in adj)
 	free(v);
 }
 
@@ -429,7 +456,9 @@ static void ord_dtriangulate(	struct vert *v,
 
 		// get lower and upper common tangents between the two halves
 		lct(li, ri, &lctl, &lctr);
-		uct(li, ri, &uctl, &uctr);
+		uct(li, ri, &uctl, &uctr); // TODO: remove upper common tangent calculation, 
+		// and just stop merge loop when next candidates are below the line of the current base
+		// (ie rightOf(cand, li, ri))
 
 		// merge the two halves
 		li = lctl;
