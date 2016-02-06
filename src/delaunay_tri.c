@@ -23,6 +23,7 @@
 #include <stdlib.h>
 
 #define DTEPSILON 1e-8 // TODO: explore different epsilon values
+#define MINPOINTS 2
 
 
 struct vert {
@@ -55,6 +56,8 @@ static bool inCircle(	const struct vert *a,
 						const struct vert *c, 
 						const struct vert *d);
 
+static void deleteAdj(struct vert *v);
+
 static void insertNodeAfter(struct vertNode *n, struct vertNode *in);
 static void insertNode(struct vert *parent, struct vert *in);
 static void deleteNode(struct vert *parent, struct vert *child);
@@ -83,6 +86,10 @@ static void ord_dtriangulate(	struct vert *v,
 								int ib, 
 								struct vert **leftmost, 
 								struct vert **rightmost);
+
+// We are not liable for any lethal or non-lethal harm caused to you by this function. 
+// Be warned.
+static void convertTrisFreeVerts(struct vert *v);
 
 
 static struct dTriangulation *mtri;
@@ -167,6 +174,18 @@ static bool inCircle(	const struct vert *a,
 	m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2]) > DTEPSILON;
 }
 
+
+static void deleteAdj(struct vert *v) {
+	struct vertNode *vn = v->adj, *prev;
+	if(vn) {
+		do {
+			prev = vn;
+			vn = vn->next;
+			free(prev);
+		} while(vn != v->adj);
+	}
+	v->adj = NULL;
+}
 
 static inline void insertNodeAfter(struct vertNode *n, struct vertNode *in) {
 	struct vertNode *temp = n->next;
@@ -300,7 +319,6 @@ static struct vert *succ(	const struct vert *vi,
 
 
 // Lower common tangent of two convex hulls
-// TODO: what happens in edge cases? (ex. given hulls have 2 or less points)
 static void lct(struct vert *lrightmost, 
 				struct vert *rleftmost, 
 				struct vert **lctleft, 
@@ -362,9 +380,19 @@ static void uct(struct vert *lrightmost,
 
 
 void dtriangulate(struct dTriangulation *tri) {
+	if(tri->npoints < MINPOINTS) {
+		fprintf(stderr, 
+			"TRIANGULATION ERROR: Only %d points? That's not enough!\n", 
+			tri->npoints);
+		return;
+	}
+
 	mtri = tri;
 
 	// construct vertex structures of points
+	// TODO: sort indexes instead of vert structs (less memory movement),
+	// then remove indexes with duplicate coordinates,
+	// then construct verts!
 	struct vert *v = (struct vert*)malloc(mtri->npoints * sizeof(struct vert));
 
 	for(int i = 0; i < mtri->npoints; ++i) {
@@ -373,8 +401,18 @@ void dtriangulate(struct dTriangulation *tri) {
 	}
 
 	// sort vertices lexicographically by point coordinates
-	// TODO: remove duplicate points! (within DTEPSILON range)
 	qsort(v, mtri->npoints, sizeof(struct vert), compareVerts);
+
+	mtri->nverts = mtri->npoints;
+	// TODO: remove duplicate points! (within DTEPSILON range)
+
+	if(mtri->nverts < MINPOINTS) {
+		fprintf(stderr, 
+			"TRIANGULATION ERROR: Only %d non-duplicate points? That's not enough!\n", 
+			mtri->nverts);
+		free(v);
+		return;
+	}
 
 	// DEBUG
 	// FILE *f = fopen("points.txt", "w");
@@ -395,31 +433,28 @@ void dtriangulate(struct dTriangulation *tri) {
 
 	// triangulate the sorted points
 	struct vert *l, *r;
-	ord_dtriangulate(v, 0, mtri->npoints - 1, &l, &r);
-
-	// TODO: convert the triangulation into triangle list and store in tri->triangles
+	ord_dtriangulate(v, 0, mtri->nverts - 1, &l, &r);
 
 	// DEBUG
-	FILE *f = fopen("adj.txt", "w");
+	// FILE *f = fopen("adj.txt", "w");
 
-	for(int i = 0; i < mtri->npoints; ++i) {
-		fprintf(f, "%f, %f: ", XX(&v[i]), YY(&v[i]));
-		if(v[i].adj) {
-			struct vertNode *n = v[i].adj;
-			do {
-				fprintf(f, "%f, %f; ", XX(n->v), YY(n->v));
-				n = n->next;
-			} while(n && n != v[i].adj);
-			fprintf(f, "\n");
-		}
-	}
+	// for(int i = 0; i < mtri->npoints; ++i) {
+	// 	fprintf(f, "%f, %f: ", XX(&v[i]), YY(&v[i]));
+	// 	if(v[i].adj) {
+	// 		struct vertNode *n = v[i].adj;
+	// 		do {
+	// 			fprintf(f, "%f, %f; ", XX(n->v), YY(n->v));
+	// 			n = n->next;
+	// 		} while(n && n != v[i].adj);
+	// 		fprintf(f, "\n");
+	// 	}
+	// }
 
-	fclose(f);
+	// fclose(f);
 	//
 
-	// TODO: free vertnodes in adjacency lists!
-	// (just loop through v and for each v, free all nodes in adj)
-	free(v);
+	// convert the triangulation into triangle list and store in mtri->triangles
+	convertTrisFreeVerts(v);
 }
 
 // triangulates given vertices assuming that they are lexicographically ordered
@@ -515,3 +550,39 @@ static void ord_dtriangulate(	struct vert *v,
 	}
 	// else, num points <=1; invalid input so do nothing
 }
+
+// WARNING: this function frees the given verts and their adj nodes.
+// The enumerated triangle indexes are stored in mtri->triangles.
+// The given verts are invalidated in order to avoid using an extra variable
+// for marking verts as "completed"
+static void convertTrisFreeVerts(struct vert *v) {
+	int ntri = 0;
+	// 2(n-1)-k is number of triangles, n = nverts and k = num points on convex hull
+	// 2 is used for k to accomodate case of two input points
+	mtri->triangles = (int*)malloc(3 * (2 * (mtri->nverts - 1) - 2) * sizeof(int));
+
+	struct vertNode *vn;
+	for(int i = 0; i < mtri->nverts; ++i) {
+		vn = v[i].adj;
+		if(vn) {
+			do {
+				if(vn->next != vn 
+					&& vn->v->index >= 0 
+					&& vn->next->v->index >= 0) {
+					mtri->triangles[3*ntri] = v[i].index;
+					mtri->triangles[3*ntri+1] = vn->v->index;
+					mtri->triangles[3*ntri+2] = vn->next->v->index;
+					++ntri;
+				}
+				vn = vn->next;
+			} while(vn != v[i].adj);
+		}
+		v[i].index = -1; // mark this vert as complete
+		deleteAdj(&v[i]);
+	}
+
+	realloc(mtri->triangles, 3 * ntri * sizeof(int)); // shrink memory if needed
+
+	free(v);
+}
+

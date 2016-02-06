@@ -25,6 +25,7 @@ struct dTriangulation {
 	int *triangles; // list of delaunay triangles as groups of three point indexes 
 					// (index = order of point in given points array)
 	int ntriangles;
+	int nverts; // equivalent to the number of non-duplicate input points
 };
 
 
