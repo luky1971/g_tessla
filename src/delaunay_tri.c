@@ -582,6 +582,8 @@ static void convertTrisFreeVerts(struct vert *v) {
 	}
 
 	realloc(mtri->triangles, 3 * ntri * sizeof(int)); // shrink memory if needed
+	// TODO: see if removing realloc gives speedup
+	mtri->ntriangles = ntri;
 
 	free(v);
 }

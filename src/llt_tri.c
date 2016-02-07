@@ -19,6 +19,7 @@
 #include "delaunay_tri.h"
 
 void print_trifiles(struct triangulateio *tio, const char *node_name, const char *ele_name);
+void print_dtrifiles(struct dTriangulation *tri, const char *node_name, const char *ele_name);
 
 
 void llt_delaunay_area(	const char *traj_fname, 
@@ -61,7 +62,10 @@ void delaunay_surface_area(	rvec *x,
 							unsigned char flags,
 							real *a2D,
 							real *a3D) {
+	static int iter = 0;
+
 	struct dTriangulation tri;
+	++iter;
 
 	// Input initialization
 	snew(tri.points, 2 * natoms);
@@ -75,11 +79,18 @@ void delaunay_surface_area(	rvec *x,
 	// triangulate
 	dtriangulate(&tri);
 
+	if(flags & LLT_PRINT) { // print triangle data to files that can be viewed with triangle's 'showme' program
+		char fname1[50], fname2[50];
+		sprintf(fname1, "triangles%d.node", iter);
+		sprintf(fname2, "triangles%d.ele", iter);
+		print_dtrifiles(&tri, fname1, fname2);
+	} 
+
 	sfree(tri.points);
 
 	// TODO: calculate surface area of triangles
 
-	// free(tri.triangles);
+	free(tri.triangles);
 }
 
 void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
@@ -336,6 +347,28 @@ void print_areas(const char *fname, struct tri_area *areas) {
 	print_log("Surface areas saved to %s\n", fname);
 }
 
+void print_dtrifiles(struct dTriangulation *tri, const char *node_name, const char *ele_name) {
+	// print points to node file
+	FILE *node = fopen(node_name, "w");
+
+	fprintf(node, "%d\t2\t0\t0\n", tri->npoints);
+	for(int i = 0; i < tri->npoints; ++i) {
+		fprintf(node, "%d\t%f\t%f\n", i, tri->points[2*i], tri->points[2*i + 1]);
+	}
+
+	fclose(node);
+
+	// print triangles to ele file
+	FILE *ele = fopen(ele_name, "w");
+
+	fprintf(ele, "%d\t3\t0\n", tri->ntriangles);
+	for(int i = 0; i < tri->ntriangles; ++i) {
+		fprintf(ele, "%d\t%d\t%d\t%d\n", 
+			i, tri->triangles[3*i], tri->triangles[3*i + 1], tri->triangles[3*i + 2]);
+	}
+
+	fclose(ele);
+}
 
 void print_trifiles(struct triangulateio *tio, const char *node_name, const char *ele_name) {
 	// print points to node file
