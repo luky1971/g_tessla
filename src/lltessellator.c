@@ -91,9 +91,9 @@ int main(int argc, char *argv[]) {
 		
 		llt_delaunay_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, &areas, flags);
 
-		// print_areas(fnames[efT_OUTDAT], &areas);
+		print_areas(fnames[efT_OUTDAT], &areas);
 
-		// free_tri_area(&areas);
+		free_tri_area(&areas);
 	}
 
 #ifdef LLT_BENCH

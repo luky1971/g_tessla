@@ -27,6 +27,9 @@
 
 
 struct vert {
+	struct dTriangulation *mtri; // TODO: find more efficient way of storing this thread-safely!
+	// (ex. define your own sorting method that takes in a dTriangulation parameter so you don't 
+	// need to make this pointer globally accessible)
 	int index;
 	struct vertNode *adj;
 };
@@ -92,15 +95,12 @@ static void ord_dtriangulate(	struct vert *v,
 static void convertTrisFreeVerts(struct vert *v);
 
 
-static struct dTriangulation *mtri;
-
-
 static inline dtreal XX(const struct vert *v) {
-	return mtri->points[2 * v->index];
+	return v->mtri->points[2 * v->index];
 }
 
 static inline dtreal YY(const struct vert *v) {
-	return mtri->points[2 * v->index + 1];
+	return v->mtri->points[2 * v->index + 1];
 }
 
 
@@ -387,29 +387,28 @@ void dtriangulate(struct dTriangulation *tri) {
 		return;
 	}
 
-	mtri = tri;
-
 	// construct vertex structures of points
 	// TODO: sort indexes instead of vert structs (less memory movement),
 	// then remove indexes with duplicate coordinates,
 	// then construct verts!
-	struct vert *v = (struct vert*)malloc(mtri->npoints * sizeof(struct vert));
+	struct vert *v = (struct vert*)malloc(tri->npoints * sizeof(struct vert));
 
-	for(int i = 0; i < mtri->npoints; ++i) {
+	for(int i = 0; i < tri->npoints; ++i) {
+		v[i].mtri = tri;
 		v[i].index = i;
 		v[i].adj = NULL;
 	}
 
 	// sort vertices lexicographically by point coordinates
-	qsort(v, mtri->npoints, sizeof(struct vert), compareVerts);
+	qsort(v, tri->npoints, sizeof(struct vert), compareVerts);
 
-	mtri->nverts = mtri->npoints;
+	tri->nverts = tri->npoints;
 	// TODO: remove duplicate points! (within DTEPSILON range)
 
-	if(mtri->nverts < MINPOINTS) {
+	if(tri->nverts < MINPOINTS) {
 		fprintf(stderr, 
 			"TRIANGULATION ERROR: Only %d non-duplicate points? That's not enough!\n", 
-			mtri->nverts);
+			tri->nverts);
 		free(v);
 		return;
 	}
@@ -417,7 +416,7 @@ void dtriangulate(struct dTriangulation *tri) {
 	// DEBUG
 	// FILE *f = fopen("points.txt", "w");
 
-	// for(int i = 0; i < mtri->npoints; ++i) {
+	// for(int i = 0; i < tri->npoints; ++i) {
 	// 	fprintf(f, "%f, %f\n", XX(&v[i]), YY(&v[i]));
 	// }
 
@@ -433,12 +432,12 @@ void dtriangulate(struct dTriangulation *tri) {
 
 	// triangulate the sorted points
 	struct vert *l, *r;
-	ord_dtriangulate(v, 0, mtri->nverts - 1, &l, &r);
+	ord_dtriangulate(v, 0, tri->nverts - 1, &l, &r);
 
 	// DEBUG
 	// FILE *f = fopen("adj.txt", "w");
 
-	// for(int i = 0; i < mtri->npoints; ++i) {
+	// for(int i = 0; i < tri->npoints; ++i) {
 	// 	fprintf(f, "%f, %f: ", XX(&v[i]), YY(&v[i]));
 	// 	if(v[i].adj) {
 	// 		struct vertNode *n = v[i].adj;
@@ -453,7 +452,7 @@ void dtriangulate(struct dTriangulation *tri) {
 	// fclose(f);
 	//
 
-	// convert the triangulation into triangle list and store in mtri->triangles
+	// convert the triangulation into triangle list and store in tri->triangles
 	convertTrisFreeVerts(v);
 }
 
@@ -552,26 +551,27 @@ static void ord_dtriangulate(	struct vert *v,
 }
 
 // WARNING: this function frees the given verts and their adj nodes.
-// The enumerated triangle indexes are stored in mtri->triangles.
+// The enumerated triangle indexes are stored in tri->triangles.
 // The given verts are invalidated in order to avoid using an extra variable
 // for marking verts as "completed"
 static void convertTrisFreeVerts(struct vert *v) {
 	int ntri = 0;
 	// 2(n-1)-k is number of triangles, n = nverts and k = num points on convex hull
 	// 2 is used for k to accomodate case of two input points
-	mtri->triangles = (int*)malloc(3 * (2 * (mtri->nverts - 1) - 2) * sizeof(int));
+	v[0].mtri->triangles = (int*)malloc(3 * (2 * (v[0].mtri->nverts - 1) - 2) * sizeof(int));
 
 	struct vertNode *vn;
-	for(int i = 0; i < mtri->nverts; ++i) {
+	int nverts = v[0].mtri->nverts;
+	for(int i = 0; i < nverts; ++i) {
 		vn = v[i].adj;
 		if(vn) {
 			do {
 				if(vn->next != vn 
 					&& vn->v->index >= 0 
 					&& vn->next->v->index >= 0) {
-					mtri->triangles[3*ntri] = v[i].index;
-					mtri->triangles[3*ntri+1] = vn->v->index;
-					mtri->triangles[3*ntri+2] = vn->next->v->index;
+					v[i].mtri->triangles[3*ntri] = v[i].index;
+					v[i].mtri->triangles[3*ntri+1] = vn->v->index;
+					v[i].mtri->triangles[3*ntri+2] = vn->next->v->index;
 					++ntri;
 				}
 				vn = vn->next;
@@ -581,9 +581,9 @@ static void convertTrisFreeVerts(struct vert *v) {
 		deleteAdj(&v[i]);
 	}
 
-	realloc(mtri->triangles, 3 * ntri * sizeof(int)); // shrink memory if needed
+	realloc(v[0].mtri->triangles, 3 * ntri * sizeof(int)); // shrink memory if needed
 	// TODO: see if removing realloc gives speedup
-	mtri->ntriangles = ntri;
+	v[0].mtri->ntriangles = ntri;
 
 	free(v);
 }

@@ -51,10 +51,42 @@ void llt_delaunay_area(	const char *traj_fname,
 		x = pre_x;
 	}
 
-	delaunay_surface_area(x[0], areas->natoms, flags, &(areas->area2D[0]), &(areas->area[0]));
+#ifdef LLT_BENCH
+	clock_t start = clock();
+#endif
+
+#ifdef _OPENMP
+	if(!(flags & LLT_NOPAR))
+		print_log("Triangulation will be parallelized.\n");
+#endif
+	// Calculate triangulated surface area for every frame
+	snew(areas->area, areas->nframes);
+	snew(areas->area2Dbox, areas->nframes);
+	if(flags & LLT_2D)	snew(areas->area2D, areas->nframes);
+
+	print_log("Triangulating %d frames...\n", areas->nframes);
+
+#pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
+	for(int i = 0; i < areas->nframes; ++i) {
+#if defined _OPENMP && defined LLT_DEBUG
+		print_log("%d threads triangulating.\n", omp_get_num_threads());
+#endif
+		// 2D area of box
+		areas->area2Dbox[i] = box[i][0][0] * box[i][1][1];
+
+		real *a2D = NULL;
+		if(flags & LLT_2D)	a2D = &(areas->area2D[i]);
+		delaunay_surface_area(x[i], areas->natoms, flags, a2D, &(areas->area[i]));
+		sfree(x[i]);
+	}
 
 	sfree(x);
 	sfree(box);
+
+#ifdef LLT_BENCH
+	clock_t clocks = clock() - start;
+	print_log("Triangulation took %d clocks, %f seconds.\n", clocks, (float)clocks/CLOCKS_PER_SEC);
+#endif
 }
 
 void delaunay_surface_area(	rvec *x, 
@@ -88,7 +120,48 @@ void delaunay_surface_area(	rvec *x,
 
 	sfree(tri.points);
 
-	// TODO: calculate surface area of triangles
+	// calculate surface area of triangles
+	if(a2D) {
+		if(a3D) {
+			*a2D = 0;
+			*a3D = 0;
+			rvec a, b, c;
+			for(int i = 0; i < tri.ntriangles; ++i) {
+				copy_rvec(x[tri.triangles[3*i]], a);
+				copy_rvec(x[tri.triangles[3*i + 1]], b);
+				copy_rvec(x[tri.triangles[3*i + 2]], c);
+
+				(*a3D) += area_tri(a, b, c);
+
+				a[ZZ] = 0;
+				b[ZZ] = 0;
+				c[ZZ] = 0;
+
+				(*a2D) += area_tri(a, b, c);
+			}
+		}
+		else {
+			*a2D = 0;
+			rvec a, b, c;
+			for(int i = 0; i < tri.ntriangles; ++i) {
+				copy_rvec(x[tri.triangles[3*i]], a);
+				copy_rvec(x[tri.triangles[3*i + 1]], b);
+				copy_rvec(x[tri.triangles[3*i + 2]], c);
+
+				a[ZZ] = 0;
+				b[ZZ] = 0;
+				c[ZZ] = 0;
+
+				(*a2D) += area_tri(a, b, c);
+			}
+		}
+	}
+	else if(a3D) {
+		*a3D = 0;
+		for(int i = 0; i < tri.ntriangles; ++i) {
+			(*a3D) += area_tri(x[tri.triangles[3*i]], x[tri.triangles[3*i + 1]], x[tri.triangles[3*i + 2]]);
+		}
+	}
 
 	free(tri.triangles);
 }
