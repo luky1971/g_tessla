@@ -36,30 +36,34 @@ struct tri_area {
 void llt_delaunay_area(	const char *traj_fname, 
 						const char *ndx_fname, 
 						output_env_t *oenv, 
+						real corr, 
 						struct tri_area *areas, 
 						unsigned char flags);
 
-void delaunay_surface_area(	rvec *x, 
+void delaunay_surface_area(	const rvec *x, 
 							int natoms, 
 							unsigned char flags,
 							real *a2D,
 							real *a3D);
+/* a2D and/or a3D can be NULL.
+ */
 
+// void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
+// 	struct tri_area *areas, unsigned char flags);
 
-void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
-	struct tri_area *areas, unsigned char flags);
-
-real tri_surface_area(rvec *x, int natoms, unsigned char flags, real *a2D);
+// real tri_surface_area(const rvec *x, int natoms, unsigned char flags, real *a2D);
 /* Returns 3D surface area.
  * If a2D is not NULL, stores 2D surface area in a2D.
  */
 
-void print_areas(const char *fname, struct tri_area *areas);
+void print_areas(const char *fname, const struct tri_area *areas);
 
 void free_tri_area(struct tri_area *areas);
 
 
-static inline real area_tri(rvec a, rvec b, rvec c) {
+static inline real area_tri(const rvec a, 
+							const rvec b, 
+							const rvec c) {
 	rvec ab, ac, cpr;
 	rvec_sub(b, a, ab);
 	rvec_sub(c, a, ac);

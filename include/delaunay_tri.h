@@ -15,7 +15,9 @@
  *
  */
 
-typedef double dtreal; // test performance and accuracy of double vs float
+#include "predicates.h"
+
+typedef REAL dtreal; // test performance and accuracy of double vs float
 
 
 struct dTriangulation {
@@ -28,6 +30,10 @@ struct dTriangulation {
 	int nverts; // equivalent to the number of non-duplicate input points
 };
 
+
+void dtinit();
+/* Call this once before calling dtriangulate()
+ */
 
 void dtriangulate(struct dTriangulation *tri);
 /* Triangulates the points given in tri using Delaunay triangulation,

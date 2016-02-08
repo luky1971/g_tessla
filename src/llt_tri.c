@@ -12,19 +12,24 @@
 #ifdef LLT_BENCH
 #include <time.h>
 #endif
-#include "triangle.h"
+// #include "triangle.h"
 #include "gkut_io.h"
 #include "gkut_log.h"
 #include "smalloc.h"
 #include "delaunay_tri.h"
 
-void print_trifiles(struct triangulateio *tio, const char *node_name, const char *ele_name);
-void print_dtrifiles(struct dTriangulation *tri, const char *node_name, const char *ele_name);
+// void print_trifiles(const struct triangulateio *tio, 
+// 					const char *node_name, 
+// 					const char *ele_name);
+void print_dtrifiles(	const struct dTriangulation *tri, 
+						const char *node_name, 
+						const char *ele_name);
 
 
 void llt_delaunay_area(	const char *traj_fname, 
 						const char *ndx_fname, 
 						output_env_t *oenv, 
+						real corr, 
 						struct tri_area *areas, 
 						unsigned char flags) {
 	rvec **pre_x, **x;
@@ -59,25 +64,225 @@ void llt_delaunay_area(	const char *traj_fname,
 	if(!(flags & LLT_NOPAR))
 		print_log("Triangulation will be parallelized.\n");
 #endif
+
 	// Calculate triangulated surface area for every frame
+	dtinit(); // Initialize the delaunay triangulator
 	snew(areas->area, areas->nframes);
 	snew(areas->area2Dbox, areas->nframes);
 	if(flags & LLT_2D)	snew(areas->area2D, areas->nframes);
 
-	print_log("Triangulating %d frames...\n", areas->nframes);
+	if(flags & LLT_CORRECT) { // add correction for periodic bounds
+		print_log("Triangulating and correcting %d frames...\n", areas->nframes);
 
 #pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
-	for(int i = 0; i < areas->nframes; ++i) {
-#if defined _OPENMP && defined LLT_DEBUG
-		print_log("%d threads triangulating.\n", omp_get_num_threads());
-#endif
-		// 2D area of box
-		areas->area2Dbox[i] = box[i][0][0] * box[i][1][1];
+		for(int fr = 0; fr < areas->nframes; ++fr) {
+			// Calculate number of edge points
+			int n_edge_x = box[fr][0][0] / corr;
+			int n_edge_y = box[fr][1][1] / corr;
 
-		real *a2D = NULL;
-		if(flags & LLT_2D)	a2D = &(areas->area2D[i]);
-		delaunay_surface_area(x[i], areas->natoms, flags, a2D, &(areas->area[i]));
-		sfree(x[i]);
+			// Calculate box area
+			areas->area2Dbox[fr] = box[fr][0][0] * box[fr][1][1];
+
+			// z-coordinates of particles closest to box corners
+			real bot_left = FLT_MAX, top_right = FLT_MIN, 
+				top_left = FLT_MAX, bot_right = FLT_MIN, 
+				avg_z;
+			int bot_left_ind = 0, top_right_ind = 0, top_left_ind = 0, bot_right_ind = 0;
+			
+			// Find min max coordinates for each interval
+			real *y_mins, *y_maxes, *x_mins, *x_maxes;
+			snew(y_mins, n_edge_x + 1);
+			snew(y_maxes, n_edge_x + 1);
+			snew(x_mins, n_edge_y + 1);
+			snew(x_maxes, n_edge_y + 1);
+
+			int *y_min_inds, *y_max_inds, *x_min_inds, *x_max_inds;
+			snew(y_min_inds, n_edge_x + 1);
+			snew(y_max_inds, n_edge_x + 1);
+			snew(x_min_inds, n_edge_y + 1);
+			snew(x_max_inds, n_edge_y + 1);
+
+			for(int i = 0; i <= n_edge_x; ++i)
+				y_mins[i] = FLT_MAX;
+			for(int i = 0; i <= n_edge_x; ++i)
+				y_maxes[i] = FLT_MIN;
+			for(int i = 0; i <= n_edge_y; ++i)
+				x_mins[i] = FLT_MAX;
+			for(int i = 0; i <= n_edge_y; ++i)
+				x_maxes[i] = FLT_MIN;
+
+			memset(y_min_inds, 0, sizeof(int) * (n_edge_x + 1));
+			memset(y_max_inds, 0, sizeof(int) * (n_edge_x + 1));
+			memset(x_min_inds, 0, sizeof(int) * (n_edge_y + 1));
+			memset(x_max_inds, 0, sizeof(int) * (n_edge_y + 1));
+
+			real dist, dY;
+			int x_interval, y_interval;
+			for(int j = 0; j < areas->natoms; ++j) {
+				// min and max distance from origin
+				dist = x[fr][j][XX] * x[fr][j][XX] + x[fr][j][YY] * x[fr][j][YY];
+				if(dist < bot_left) {
+					bot_left = dist;
+					bot_left_ind = j;
+				}
+				if(dist > top_right) {
+					top_right = dist;
+					top_right_ind = j;
+				}
+
+				// min and max distance from top left corner
+				dY = box[fr][1][1] - x[fr][j][YY];
+				dist = x[fr][j][XX] * x[fr][j][XX] + dY * dY;
+				if(dist < top_left) {
+					top_left = dist;
+					top_left_ind = j;
+				}
+				if(dist > bot_right) {
+					bot_right = dist;
+					bot_right_ind = j;
+				}
+
+				// Check min max y in x interval
+				x_interval = (int)((x[fr][j][XX] / box[fr][0][0]) * n_edge_x);
+
+				if(x[fr][j][YY] < y_mins[x_interval]) {
+					y_mins[x_interval] = x[fr][j][YY];
+					y_min_inds[x_interval] = j;
+				}
+
+				if(x[fr][j][YY] > y_maxes[x_interval]) {
+					y_maxes[x_interval] = x[fr][j][YY];
+					y_max_inds[x_interval] = j;
+				}
+
+				// Check min max x in y interval
+				y_interval = (int)((x[fr][j][YY] / box[fr][1][1]) * n_edge_y);
+				
+				if(x[fr][j][XX] < x_mins[y_interval]) {
+					x_mins[y_interval] = x[fr][j][XX];
+					x_min_inds[y_interval] = j;
+				}
+
+				if(x[fr][j][XX] > x_maxes[y_interval]) {
+					x_maxes[y_interval] = x[fr][j][XX];
+					x_max_inds[y_interval] = j;
+				}
+			}
+
+			sfree(y_mins);
+			sfree(y_maxes);
+			sfree(x_mins);
+			sfree(x_maxes);
+
+			avg_z = ( x[fr][bot_left_ind][ZZ] 
+					+ x[fr][top_right_ind][ZZ] 
+					+ x[fr][top_left_ind][ZZ] 
+					+ x[fr][bot_right_ind][ZZ]) / 4.0;
+
+			// add edge and corner points
+
+			srenew(x[fr], areas->natoms + 2 * (n_edge_x + 1) + 2 * (n_edge_y + 1));
+			int n = areas->natoms;
+
+			// Add corner points
+			x[fr][n][XX] 	= 0;
+			x[fr][n][YY] 	= 0;
+			x[fr][n++][ZZ] 	= avg_z;
+
+			x[fr][n][XX] 	= box[fr][0][0];
+			x[fr][n][YY] 	= 0;
+			x[fr][n++][ZZ] 	= avg_z;
+
+			x[fr][n][XX] 	= box[fr][0][0];
+			x[fr][n][YY] 	= box[fr][1][1];
+			x[fr][n++][ZZ] 	= avg_z;
+
+			x[fr][n][XX] 	= 0;
+			x[fr][n][YY] 	= box[fr][1][1];
+			x[fr][n++][ZZ] 	= avg_z;
+
+			// Add edge points
+			real dist1, dist2;
+			for(int j = 0; j < n_edge_x; ++j) {
+				// Bottom edge
+				x[fr][n][XX] = j * corr + corr / 2; // Go to middle of interval
+				x[fr][n][YY] = 0;
+				// edge Z coord is distance-from-edge-weighted average between the Zs of the two points closest to the two edges of this axis
+				dist1 = x[fr][y_min_inds[j]][YY];
+				dist2 = box[fr][1][1] - x[fr][y_max_inds[j]][YY];
+				dist = dist1 + dist2;
+				avg_z = x[fr][y_min_inds[j]][ZZ] - (dist1/dist)*(x[fr][y_min_inds[j]][ZZ]) 
+					  + x[fr][y_max_inds[j]][ZZ] - (dist2/dist)*(x[fr][y_max_inds[j]][ZZ]);
+				x[fr][n++][ZZ] = avg_z;
+
+				// Top edge
+				x[fr][n][XX] = j * corr + corr / 2;
+				x[fr][n][YY] = box[fr][1][1];
+				x[fr][n++][ZZ] = avg_z;
+			}
+
+			for(int j = 0; j < n_edge_y; ++j) {
+				// Left edge
+				x[fr][n][XX] = 0;
+				x[fr][n][YY] = j * corr + corr / 2;
+				
+				dist1 = x[fr][x_min_inds[j]][XX];
+				dist2 = box[fr][0][0] - x[fr][x_max_inds[j]][XX];
+				dist = dist1 + dist2;
+				avg_z = x[fr][x_min_inds[j]][ZZ] - (dist1/dist)*(x[fr][x_min_inds[j]][ZZ])
+					  + x[fr][x_max_inds[j]][ZZ] - (dist2/dist)*(x[fr][x_max_inds[j]][ZZ]);
+				x[fr][n++][ZZ] = avg_z;
+
+				// Right edge
+				x[fr][n][XX] = box[fr][0][0];
+				x[fr][n][YY] = j * corr + corr / 2;
+				x[fr][n++][ZZ] = avg_z;
+			}
+
+			sfree(y_min_inds);
+			sfree(y_max_inds);
+			sfree(x_min_inds);
+			sfree(x_max_inds);
+
+	#ifdef LLT_DEBUG
+			FILE *f = fopen("points.txt", "w");
+
+			for(int j = 0; j < n; ++j) {
+				fprintf(f, "%d: %f\t%f\t%f\n", j, x[fr][j][XX], x[fr][j][YY], x[fr][j][ZZ]);
+			}
+
+			fclose(f);
+
+			print_log("Points saved to points.txt for debugging.\n");
+			exit(0);
+	#endif
+
+			// Calculate area including added edge and corner points
+			real *a2D = NULL;
+			if(flags & LLT_2D)	a2D = &(areas->area2D[fr]);
+			delaunay_surface_area(x[fr], n, flags, a2D, &(areas->area[fr]));
+			// areas->area[fr] = tri_surface_area(x[fr], n, flags, a2D);
+
+			sfree(x[fr]);
+		}
+	}
+	else { // triangulate without correction for periodic bounds
+		print_log("Triangulating %d frames...\n", areas->nframes);
+
+#pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
+		for(int i = 0; i < areas->nframes; ++i) {
+#if defined _OPENMP && defined LLT_DEBUG
+			print_log("%d threads triangulating.\n", omp_get_num_threads());
+#endif
+			// 2D area of box
+			areas->area2Dbox[i] = box[i][0][0] * box[i][1][1];
+
+			real *a2D = NULL;
+			if(flags & LLT_2D)	a2D = &(areas->area2D[i]);
+			delaunay_surface_area(x[i], areas->natoms, flags, a2D, &(areas->area[i]));
+			// areas->area[i] = tri_surface_area(x[i], areas->natoms, flags, a2D);
+			sfree(x[i]);
+		}
 	}
 
 	sfree(x);
@@ -85,11 +290,12 @@ void llt_delaunay_area(	const char *traj_fname,
 
 #ifdef LLT_BENCH
 	clock_t clocks = clock() - start;
-	print_log("Triangulation took %d clocks, %f seconds.\n", clocks, (float)clocks/CLOCKS_PER_SEC);
+	print_log("Triangulation took %d clocks, %f seconds.\n", 
+		clocks, (float)clocks/CLOCKS_PER_SEC);
 #endif
 }
 
-void delaunay_surface_area(	rvec *x, 
+void delaunay_surface_area(	const rvec *x, 
 							int natoms, 
 							unsigned char flags,
 							real *a2D,
@@ -159,206 +365,211 @@ void delaunay_surface_area(	rvec *x,
 	else if(a3D) {
 		*a3D = 0;
 		for(int i = 0; i < tri.ntriangles; ++i) {
-			(*a3D) += area_tri(x[tri.triangles[3*i]], x[tri.triangles[3*i + 1]], x[tri.triangles[3*i + 2]]);
+			(*a3D) += area_tri( x[tri.triangles[3*i]], 
+								x[tri.triangles[3*i + 1]], 
+								x[tri.triangles[3*i + 2]]);
 		}
 	}
 
 	free(tri.triangles);
 }
 
-void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
-	struct tri_area *areas, unsigned char flags) {
-	rvec **pre_x, **x;
-	matrix *box;
+// void llt_tri_area(const char *traj_fname, const char *ndx_fname, output_env_t *oenv, 
+// 	struct tri_area *areas, unsigned char flags) {
+// 	rvec **pre_x, **x;
+// 	matrix *box;
 
-	areas->area = NULL;
-	areas->area2D = NULL;
-	areas->area2Dbox = NULL;
-	areas->area1 = NULL;
-	areas->area2 = NULL;
+// 	areas->area = NULL;
+// 	areas->area2D = NULL;
+// 	areas->area2Dbox = NULL;
+// 	areas->area1 = NULL;
+// 	areas->area2 = NULL;
 
-	read_traj(traj_fname, &pre_x, &box, &(areas->nframes), &(areas->natoms), oenv);
+// 	read_traj(traj_fname, &pre_x, &box, &(areas->nframes), &(areas->natoms), oenv);
 
-	// Filter trajectory by index file if present
-	if(ndx_fname != NULL) {
-		ndx_filter_traj(ndx_fname, pre_x, &x, areas->nframes, &(areas->natoms));
+// 	// Filter trajectory by index file if present
+// 	if(ndx_fname != NULL) {
+// 		ndx_filter_traj(ndx_fname, pre_x, &x, areas->nframes, &(areas->natoms));
 
-		for(int i = 0; i < areas->nframes; ++i) {
-			sfree(pre_x[i]);
-		}
-		sfree(pre_x);
-	}
-	else {
-		x = pre_x;
-	}
+// 		for(int i = 0; i < areas->nframes; ++i) {
+// 			sfree(pre_x[i]);
+// 		}
+// 		sfree(pre_x);
+// 	}
+// 	else {
+// 		x = pre_x;
+// 	}
 
-#ifdef LLT_DEBUG
-	// test filtering
-	print_traj(x, areas->nframes, areas->natoms, "traj.dat");
-#endif
+// #ifdef LLT_DEBUG
+// 	// test filtering
+// 	print_traj(x, areas->nframes, areas->natoms, "traj.dat");
+// #endif
 
-#ifdef LLT_BENCH
-	clock_t start = clock();
-#endif
+// #ifdef LLT_BENCH
+// 	clock_t start = clock();
+// #endif
 
-#ifdef _OPENMP
-	if(!(flags & LLT_NOPAR))
-		print_log("Triangulation will be parallelized.\n");
-#endif
-	// Calculate triangulated surface area for every frame
-	snew(areas->area, areas->nframes);
-	snew(areas->area2Dbox, areas->nframes);
-	if(flags & LLT_2D)	snew(areas->area2D, areas->nframes);
+// #ifdef _OPENMP
+// 	if(!(flags & LLT_NOPAR))
+// 		print_log("Triangulation will be parallelized.\n");
+// #endif
+// 	// Calculate triangulated surface area for every frame
+// 	snew(areas->area, areas->nframes);
+// 	snew(areas->area2Dbox, areas->nframes);
+// 	if(flags & LLT_2D)	snew(areas->area2D, areas->nframes);
 
-	if(flags & LLT_CORRECT) {
-		print_log("Triangulating and correcting %d frames...\n", areas->nframes);
-		snew(areas->area1, areas->nframes);
-		snew(areas->area2, areas->nframes);
+// 	if(flags & LLT_CORRECT) {
+// 		print_log("Triangulating and correcting %d frames...\n", areas->nframes);
+// 		snew(areas->area1, areas->nframes);
+// 		snew(areas->area2, areas->nframes);
 
-#ifndef _OPENMP
-		rvec *x2;
-		snew(x2, 2 * areas->natoms);
-#endif
+// #ifndef _OPENMP
+// 		rvec *x2;
+// 		snew(x2, 2 * areas->natoms);
+// #endif
 
-#pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
-		for(int i = 0; i < areas->nframes; ++i) {
-#if defined _OPENMP && defined LLT_DEBUG
-			print_log("%d threads triangulating.\n", omp_get_num_threads());
-#endif
+// #pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
+// 		for(int i = 0; i < areas->nframes; ++i) {
+// #if defined _OPENMP && defined LLT_DEBUG
+// 			print_log("%d threads triangulating.\n", omp_get_num_threads());
+// #endif
 			
-			// 2D area of box
-			areas->area2Dbox[i] = box[i][0][0] * box[i][1][1];
+// 			// 2D area of box
+// 			areas->area2Dbox[i] = box[i][0][0] * box[i][1][1];
 
-			real *a2D = NULL;
-			if(flags & LLT_2D)	a2D = &(areas->area2D[i]);
-			// Get area without correction
-			areas->area1[i] = tri_surface_area(x[i], areas->natoms, flags, a2D);
+// 			real *a2D = NULL;
+// 			if(flags & LLT_2D)	a2D = &(areas->area2D[i]);
+// 			// Get area without correction
+// 			areas->area1[i] = tri_surface_area(x[i], areas->natoms, flags, a2D);
 
-			// Correction for periodic bounds
-			rvec *trans_x;
-#ifdef _OPENMP
-			snew(trans_x, 2 * areas->natoms); // if parallelized, each thread has its own array to write vectors
-#else
-			trans_x = x2; // otherwise, all iterations write to the same array
-#endif
-			// Generate mirror image of particles...
-			memcpy(trans_x, x[i], sizeof(rvec) * areas->natoms);
-			memcpy(trans_x + areas->natoms, x[i], sizeof(rvec) * areas->natoms);
-			sfree(x[i]); // (done with this frame's original data)
-			// ...and translate it by box width
-			for(int j = areas->natoms; j < areas->natoms * 2; ++j) {
-				trans_x[j][XX] += box[i][0][0];
-			}
+// 			// Correction for periodic bounds
+// 			rvec *trans_x;
+// #ifdef _OPENMP
+// 			snew(trans_x, 2 * areas->natoms); // if parallelized, each thread has its own array to write vectors
+// #else
+// 			trans_x = x2; // otherwise, all iterations write to the same array
+// #endif
+// 			// Generate mirror image of particles...
+// 			memcpy(trans_x, x[i], sizeof(rvec) * areas->natoms);
+// 			memcpy(trans_x + areas->natoms, x[i], sizeof(rvec) * areas->natoms);
+// 			sfree(x[i]); // (done with this frame's original data)
+// 			// ...and translate it by box width
+// 			for(int j = areas->natoms; j < areas->natoms * 2; ++j) {
+// 				trans_x[j][XX] += box[i][0][0];
+// 			}
 
-			// Get area with translated image
-			areas->area2[i] = tri_surface_area(trans_x, 2 * areas->natoms, flags, NULL);
+// 			// Get area with translated image
+// 			areas->area2[i] = tri_surface_area(trans_x, 2 * areas->natoms, flags, NULL);
 
-#ifdef _OPENMP
-			sfree(trans_x);
-#endif
+// #ifdef _OPENMP
+// 			sfree(trans_x);
+// #endif
 
-			// Corrected area = A1 + 2*(A2 - 2*A1)
-			areas->area[i] = 2 * areas->area2[i] - 3 * areas->area1[i];
-			// areas->area[i] = areas->area1[i] + 2 * (areas->area2[i] - 2 * areas->area1[i]);
-		}
-#ifndef _OPENMP
-		sfree(x2);
-#endif
-	}
-	else {
-		print_log("Triangulating %d frames...\n", areas->nframes);
+// 			// Corrected area = A1 + 2*(A2 - 2*A1)
+// 			areas->area[i] = 2 * areas->area2[i] - 3 * areas->area1[i];
+// 			// areas->area[i] = areas->area1[i] + 2 * (areas->area2[i] - 2 * areas->area1[i]);
+// 		}
+// #ifndef _OPENMP
+// 		sfree(x2);
+// #endif
+// 	}
+// 	else {
+// 		print_log("Triangulating %d frames...\n", areas->nframes);
 
-#pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
-		for(int i = 0; i < areas->nframes; ++i) {
-#if defined _OPENMP && defined LLT_DEBUG
-			print_log("%d threads triangulating.\n", omp_get_num_threads());
-#endif
-			// 2D area of box
-			areas->area2Dbox[i] = box[i][0][0] * box[i][1][1];
+// #pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
+// 		for(int i = 0; i < areas->nframes; ++i) {
+// #if defined _OPENMP && defined LLT_DEBUG
+// 			print_log("%d threads triangulating.\n", omp_get_num_threads());
+// #endif
+// 			// 2D area of box
+// 			areas->area2Dbox[i] = box[i][0][0] * box[i][1][1];
 
-			real *a2D = NULL;
-			if(flags & LLT_2D)	a2D = &(areas->area2D[i]);
-			areas->area[i] = tri_surface_area(x[i], areas->natoms, flags, a2D);
-			sfree(x[i]);
-		}
-	}
+// 			real *a2D = NULL;
+// 			if(flags & LLT_2D)	a2D = &(areas->area2D[i]);
+// 			areas->area[i] = tri_surface_area(x[i], areas->natoms, flags, a2D);
+// 			sfree(x[i]);
+// 		}
+// 	}
 	
-	sfree(x);
-	sfree(box);
+// 	sfree(x);
+// 	sfree(box);
 
-#ifdef LLT_BENCH
-	clock_t clocks = clock() - start;
-	print_log("Triangulation took %d clocks, %f seconds.\n", clocks, (float)clocks/CLOCKS_PER_SEC);
-#endif
-}
+// #ifdef LLT_BENCH
+// 	clock_t clocks = clock() - start;
+// 	print_log("Triangulation took %d clocks, %f seconds.\n", 
+// 		clocks, (float)clocks/CLOCKS_PER_SEC);
+// #endif
+// }
 
 
-real tri_surface_area(rvec *x, int natoms, unsigned char flags, real *a2D) {
-	static int iter = 0;
+// real tri_surface_area(const rvec *x, int natoms, unsigned char flags, real *a2D) {
+// 	static int iter = 0;
 
-	char *tri_options = "zNQ";
-	struct triangulateio tio;
-	real a3D = 0;
+// 	char *tri_options = "zNQ";
+// 	struct triangulateio tio;
+// 	real a3D = 0;
 
-	++iter;
+// 	++iter;
 
-	// input initialization
-	snew(tio.pointlist, 2 * natoms);
-	tio.pointmarkerlist = NULL;
-	tio.numberofpoints = natoms;
-	tio.numberofpointattributes = 0;
+// 	// input initialization
+// 	snew(tio.pointlist, 2 * natoms);
+// 	tio.pointmarkerlist = NULL;
+// 	tio.numberofpoints = natoms;
+// 	tio.numberofpointattributes = 0;
 
-	for(int i = 0; i < natoms; ++i) {
-		tio.pointlist[2*i] = x[i][XX];
-		tio.pointlist[2*i + 1] = x[i][YY];
-	}
+// 	for(int i = 0; i < natoms; ++i) {
+// 		tio.pointlist[2*i] = x[i][XX];
+// 		tio.pointlist[2*i + 1] = x[i][YY];
+// 	}
 
-	// output initialization
-	tio.trianglelist = NULL;
+// 	// output initialization
+// 	tio.trianglelist = NULL;
 
-	// triangulate the atoms
-	triangulate(tri_options, &tio, &tio, NULL);
+// 	// triangulate the atoms
+// 	triangulate(tri_options, &tio, &tio, NULL);
 
-	if(flags & LLT_PRINT) { // print triangle data to files that can be viewed with triangle's 'showme' program
-		char fname1[50], fname2[50];
-		sprintf(fname1, "triangles%d.node", iter);
-		sprintf(fname2, "triangles%d.ele", iter);
-		print_trifiles(&tio, fname1, fname2);
-	}
+// 	if(flags & LLT_PRINT) { // print triangle data to files that can be viewed with triangle's 'showme' program
+// 		char fname1[50], fname2[50];
+// 		sprintf(fname1, "triangles%d.node", iter);
+// 		sprintf(fname2, "triangles%d.ele", iter);
+// 		print_trifiles(&tio, fname1, fname2);
+// 	}
 
-	sfree(tio.pointlist);
+// 	sfree(tio.pointlist);
 
-	// calculate surface area of triangles
-	if(a2D != NULL) {
-		*a2D = 0;
-		rvec a, b, c;
-		for(int i = 0; i < tio.numberoftriangles; ++i) {
-			copy_rvec(x[tio.trianglelist[3*i]], a);
-			copy_rvec(x[tio.trianglelist[3*i + 1]], b);
-			copy_rvec(x[tio.trianglelist[3*i + 2]], c);
+// 	// calculate surface area of triangles
+// 	if(a2D != NULL) {
+// 		*a2D = 0;
+// 		rvec a, b, c;
+// 		for(int i = 0; i < tio.numberoftriangles; ++i) {
+// 			copy_rvec(x[tio.trianglelist[3*i]], a);
+// 			copy_rvec(x[tio.trianglelist[3*i + 1]], b);
+// 			copy_rvec(x[tio.trianglelist[3*i + 2]], c);
 
-			a3D += area_tri(a, b, c);
+// 			a3D += area_tri(a, b, c);
 
-			a[ZZ] = 0;
-			b[ZZ] = 0;
-			c[ZZ] = 0;
+// 			a[ZZ] = 0;
+// 			b[ZZ] = 0;
+// 			c[ZZ] = 0;
 
-			(*a2D) += area_tri(a, b, c);
-		}
-	}
-	else {
-		for(int i = 0; i < tio.numberoftriangles; ++i) {
-			a3D += area_tri(x[tio.trianglelist[3*i]], x[tio.trianglelist[3*i + 1]], x[tio.trianglelist[3*i + 2]]);
-		}
-	}
+// 			(*a2D) += area_tri(a, b, c);
+// 		}
+// 	}
+// 	else {
+// 		for(int i = 0; i < tio.numberoftriangles; ++i) {
+// 			a3D += area_tri(x[tio.trianglelist[3*i]], 
+// 							x[tio.trianglelist[3*i + 1]], 
+// 							x[tio.trianglelist[3*i + 2]]);
+// 		}
+// 	}
 
-	sfree(tio.trianglelist);
+// 	sfree(tio.trianglelist);
 
-	return a3D;
-}
+// 	return a3D;
+// }
 
 // TODO: make more flexible printing conditionals
-void print_areas(const char *fname, struct tri_area *areas) {
+void print_areas(const char *fname, const struct tri_area *areas) {
 	FILE *f = fopen(fname, "w");
 	real sum = 0;
 
@@ -420,7 +631,9 @@ void print_areas(const char *fname, struct tri_area *areas) {
 	print_log("Surface areas saved to %s\n", fname);
 }
 
-void print_dtrifiles(struct dTriangulation *tri, const char *node_name, const char *ele_name) {
+void print_dtrifiles(	const struct dTriangulation *tri, 
+						const char *node_name, 
+						const char *ele_name) {
 	// print points to node file
 	FILE *node = fopen(node_name, "w");
 
@@ -443,28 +656,30 @@ void print_dtrifiles(struct dTriangulation *tri, const char *node_name, const ch
 	fclose(ele);
 }
 
-void print_trifiles(struct triangulateio *tio, const char *node_name, const char *ele_name) {
-	// print points to node file
-	FILE *node = fopen(node_name, "w");
+// void print_trifiles(const struct triangulateio *tio, 
+// 					const char *node_name, 
+// 					const char *ele_name) {
+// 	// print points to node file
+// 	FILE *node = fopen(node_name, "w");
 
-	fprintf(node, "%d\t2\t0\t0\n", tio->numberofpoints);
-	for(int i = 0; i < tio->numberofpoints; ++i) {
-		fprintf(node, "%d\t%f\t%f\n", i, tio->pointlist[2*i], tio->pointlist[2*i + 1]);
-	}
+// 	fprintf(node, "%d\t2\t0\t0\n", tio->numberofpoints);
+// 	for(int i = 0; i < tio->numberofpoints; ++i) {
+// 		fprintf(node, "%d\t%f\t%f\n", i, tio->pointlist[2*i], tio->pointlist[2*i + 1]);
+// 	}
 
-	fclose(node);
+// 	fclose(node);
 
-	// print triangles to ele file
-	FILE *ele = fopen(ele_name, "w");
+// 	// print triangles to ele file
+// 	FILE *ele = fopen(ele_name, "w");
 
-	fprintf(ele, "%d\t3\t0\n", tio->numberoftriangles);
-	for(int i = 0; i < tio->numberoftriangles; ++i) {
-		fprintf(ele, "%d\t%d\t%d\t%d\n", 
-			i, tio->trianglelist[3*i], tio->trianglelist[3*i + 1], tio->trianglelist[3*i + 2]);
-	}
+// 	fprintf(ele, "%d\t3\t0\n", tio->numberoftriangles);
+// 	for(int i = 0; i < tio->numberoftriangles; ++i) {
+// 		fprintf(ele, "%d\t%d\t%d\t%d\n", 
+// 			i, tio->trianglelist[3*i], tio->trianglelist[3*i + 1], tio->trianglelist[3*i + 2]);
+// 	}
 
-	fclose(ele);
-}
+// 	fclose(ele);
+// }
 
 void free_tri_area(struct tri_area *areas) {
 	if(areas->area)			sfree(areas->area);

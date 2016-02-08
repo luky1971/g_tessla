@@ -30,6 +30,7 @@ struct vert {
 	struct dTriangulation *mtri; // TODO: find more efficient way of storing this thread-safely!
 	// (ex. define your own sorting method that takes in a dTriangulation parameter so you don't 
 	// need to make this pointer globally accessible)
+	// OR have vert store pointer directly to its x-coordinate instead of an index
 	int index;
 	struct vertNode *adj;
 };
@@ -40,6 +41,7 @@ struct vertNode {
 };
 
 
+static inline dtreal *pcoord(const struct vert *v);
 static dtreal XX(const struct vert *v);
 static dtreal YY(const struct vert *v);
 
@@ -94,6 +96,9 @@ static void ord_dtriangulate(	struct vert *v,
 // Be warned.
 static void convertTrisFreeVerts(struct vert *v);
 
+static inline dtreal *pcoord(const struct vert *v) {
+	return v->mtri->points + 2 * v->index;
+}
 
 static inline dtreal XX(const struct vert *v) {
 	return v->mtri->points[2 * v->index];
@@ -116,17 +121,19 @@ int compareVerts(const void *a, const void *b) {
 }
 
 
-static bool ccw(const struct vert *a, 
-				const struct vert *b, 
-				const struct vert *c) {
-	dtreal xa = XX(a);
-	dtreal ya = YY(a);
-	dtreal xb = XX(b);
-	dtreal yb = YY(b);
-	dtreal xc = XX(c);
-	dtreal yc = YY(c);
+static inline bool ccw(	const struct vert *a, 
+						const struct vert *b, 
+						const struct vert *c) {
+	// dtreal xa = XX(a);
+	// dtreal ya = YY(a);
+	// dtreal xb = XX(b);
+	// dtreal yb = YY(b);
+	// dtreal xc = XX(c);
+	// dtreal yc = YY(c);
 
-	return (xa * (yb - yc) - ya * (xb - xc) + xb * yc - yb * xc) > DTEPSILON;
+	// return (xa * (yb - yc) - ya * (xb - xc) + xb * yc - yb * xc) > DTEPSILON;
+
+	return orient2d(pcoord(a), pcoord(b), pcoord(c)) > 0.0;
 }
 
 static bool rightOf(const struct vert *x, 
@@ -144,34 +151,36 @@ static bool leftOf(	const struct vert *x,
 // Acknowledgments:
 // Baker, M. (2015). Maths - Matrix algebra - Determinants 4D.
 // http://www.euclideanspace.com/maths/algebra/matrix/functions/determinant/fourD/index.htm
-static bool inCircle(	const struct vert *a, 
-						const struct vert *b, 
-						const struct vert *c, 
-						const struct vert *d) {
-	dtreal m[4][3] = {
-		{XX(a), YY(a)},
-		{XX(b), YY(b)},
-		{XX(c), YY(c)},
-		{XX(d), YY(d)}
-	};
-	m[0][2] = m[0][0] * m[0][0] + m[0][1] * m[0][1];
-	m[1][2] = m[1][0] * m[1][0] + m[1][1] * m[1][1];
-	m[2][2] = m[2][0] * m[2][0] + m[2][1] * m[2][1];
-	m[3][2] = m[3][0] * m[3][0] + m[3][1] * m[3][1];
+static inline bool inCircle(const struct vert *a, 
+							const struct vert *b, 
+							const struct vert *c, 
+							const struct vert *d) {
+	// dtreal m[4][3] = {
+	// 	{XX(a), YY(a)},
+	// 	{XX(b), YY(b)},
+	// 	{XX(c), YY(c)},
+	// 	{XX(d), YY(d)}
+	// };
+	// m[0][2] = m[0][0] * m[0][0] + m[0][1] * m[0][1];
+	// m[1][2] = m[1][0] * m[1][0] + m[1][1] * m[1][1];
+	// m[2][2] = m[2][0] * m[2][0] + m[2][1] * m[2][1];
+	// m[3][2] = m[3][0] * m[3][0] + m[3][1] * m[3][1];
 
-	return (
-	m[1][2] * m[2][1] * m[3][0] - m[0][2] * m[2][1] * m[3][0] -
-	m[1][1] * m[2][2] * m[3][0] + m[0][1] * m[2][2] * m[3][0] +
-	m[0][2] * m[1][1] * m[3][0] - m[0][1] * m[1][2] * m[3][0] -
-	m[1][2] * m[2][0] * m[3][1] + m[0][2] * m[2][0] * m[3][1] +
-	m[1][0] * m[2][2] * m[3][1] - m[0][0] * m[2][2] * m[3][1] -
-	m[0][2] * m[1][0] * m[3][1] + m[0][0] * m[1][2] * m[3][1] +
-	m[1][1] * m[2][0] * m[3][2] - m[0][1] * m[2][0] * m[3][2] -
-	m[1][0] * m[2][1] * m[3][2] + m[0][0] * m[2][1] * m[3][2] +
-	m[0][1] * m[1][0] * m[3][2] - m[0][0] * m[1][1] * m[3][2] -
-	m[0][2] * m[1][1] * m[2][0] + m[0][1] * m[1][2] * m[2][0] +
-	m[0][2] * m[1][0] * m[2][1] - m[0][0] * m[1][2] * m[2][1] -
-	m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2]) > DTEPSILON;
+	// return (
+	// m[1][2] * m[2][1] * m[3][0] - m[0][2] * m[2][1] * m[3][0] -
+	// m[1][1] * m[2][2] * m[3][0] + m[0][1] * m[2][2] * m[3][0] +
+	// m[0][2] * m[1][1] * m[3][0] - m[0][1] * m[1][2] * m[3][0] -
+	// m[1][2] * m[2][0] * m[3][1] + m[0][2] * m[2][0] * m[3][1] +
+	// m[1][0] * m[2][2] * m[3][1] - m[0][0] * m[2][2] * m[3][1] -
+	// m[0][2] * m[1][0] * m[3][1] + m[0][0] * m[1][2] * m[3][1] +
+	// m[1][1] * m[2][0] * m[3][2] - m[0][1] * m[2][0] * m[3][2] -
+	// m[1][0] * m[2][1] * m[3][2] + m[0][0] * m[2][1] * m[3][2] +
+	// m[0][1] * m[1][0] * m[3][2] - m[0][0] * m[1][1] * m[3][2] -
+	// m[0][2] * m[1][1] * m[2][0] + m[0][1] * m[1][2] * m[2][0] +
+	// m[0][2] * m[1][0] * m[2][1] - m[0][0] * m[1][2] * m[2][1] -
+	// m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2]) > DTEPSILON;
+
+	return incircle(pcoord(a), pcoord(b), pcoord(c), pcoord(d)) > 0.0; // TODO: >= or > ???
 }
 
 
@@ -219,6 +228,9 @@ static void insertNode(struct vert *parent, struct vert *in) {
 			while(cur != parent->adj && leftOf(in, parent, cur->v)) {
 				cur = cur->next;
 			}
+
+			if(cur->v == in)
+				return; // don't insert duplicate vert
 			insertNodeAfter(cur->prev, vn);
 		}
 	}
@@ -253,14 +265,14 @@ static void deleteNode(struct vert *parent, struct vert *child) {
 }
 
 static void connectVerts(struct vert *a, struct vert *b) {
-	if(a && b) {
+	if(a && b && a != b) {
 		insertNode(a, b);
 		insertNode(b, a);
 	}
 }
 
 static void cutVerts(struct vert *a, struct vert *b) {
-	if(a && b) {
+	if(a && b && a != b) {
 		deleteNode(a, b);
 		deleteNode(b, a);
 	}
@@ -326,16 +338,22 @@ static void lct(struct vert *lrightmost,
 	struct vert *x = lrightmost;
 	struct vert *y = rleftmost;
 	struct vert *rfast = first(y);
-	struct vert *lfast = pred(x, first(x));
+	struct vert *lfast = NULL;
+
+	struct vert *fx = first(x);
+	if(fx) {
+		lfast = pred(x, fx);
+	}
+	
 	struct vert *temp;
 
 	while(true) {
-		if(rightOf(rfast, x, y)) {
+		if(rfast && rightOf(rfast, x, y)) {
 			temp = rfast;
 			rfast = succ(rfast, y);
 			y = temp;
 		}
-		else if(rightOf(lfast, x, y)) {
+		else if(lfast && rightOf(lfast, x, y)) {
 			temp = lfast;
 			lfast = pred(lfast, x);
 			x = temp;
@@ -356,16 +374,22 @@ static void uct(struct vert *lrightmost,
 	struct vert *x = lrightmost;
 	struct vert *y = rleftmost;
 	struct vert *lfast = first(x);
-	struct vert *rfast = pred(y, first(y));
+	struct vert *rfast = NULL;
+
+	struct vert *fy = first(y);
+	if(fy) {
+		rfast = pred(y, first(y));
+	}
+
 	struct vert *temp;
 
 	while(true) {
-		if(leftOf(rfast, x, y)) {
+		if(rfast && leftOf(rfast, x, y)) {
 			temp = rfast;
 			rfast = pred(rfast, y);
 			y = temp;
 		}
-		else if(leftOf(lfast, x, y)) {
+		else if(lfast && leftOf(lfast, x, y)) {
 			temp = lfast;
 			lfast = succ(lfast, x);
 			x = temp;
@@ -378,6 +402,10 @@ static void uct(struct vert *lrightmost,
 	}
 }
 
+
+void dtinit() {
+	exactinit();
+}
 
 void dtriangulate(struct dTriangulation *tri) {
 	if(tri->npoints < MINPOINTS) {
@@ -504,9 +532,10 @@ static void ord_dtriangulate(	struct vert *v,
 			connectVerts(li, ri);
 
 			r1 = pred(ri, li);
+			if(!r1)	break;
 			if(leftOf(r1, li, ri)) {
 				r2 = pred(ri, r1);
-				while(inCircle(r1, li, ri, r2)) {
+				while(r2 && inCircle(r1, li, ri, r2)) {
 					cutVerts(ri, r1);
 					r1 = r2;
 					r2 = pred(ri, r1);
@@ -517,9 +546,10 @@ static void ord_dtriangulate(	struct vert *v,
 			}
 
 			l1 = succ(li, ri);
+			if(!l1)	break;
 			if(rightOf(l1, ri, li)) {
 				l2 = succ(li, l1);
-				while(inCircle(li, ri, l1, l2)) {
+				while(l2 && inCircle(li, ri, l1, l2)) {
 					cutVerts(li, l1);
 					l1 = l2;
 					l2 = succ(li, l1);
