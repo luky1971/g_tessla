@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define DTEPSILON 1e-12 // TODO: explore different epsilon values
 #define MINPOINTS 2
@@ -438,8 +439,21 @@ void dtriangulate(struct dTriangulation *tri) {
     // sort vertices lexicographically by point coordinates
     qsort(v, tri->npoints, sizeof(struct vert), compareVerts);
 
+    // remove duplicate points! (within DTEPSILON range)
+    // TODO: test!
     tri->nverts = tri->npoints;
-    // TODO: remove duplicate points! (within DTEPSILON range)
+    for(int i = 1; i < tri->nverts; ) {
+        dtreal diffx = XX(&v[i]) - XX(&v[i-1]);
+        dtreal diffy = YY(&v[i]) - YY(&v[i-1]);
+        if(diffx < DTEPSILON && diffx > -DTEPSILON
+            && diffy < DTEPSILON && diffy > -DTEPSILON) {
+            memmove(v + i, v + i + 1, tri->nverts - i + 1);
+            --(tri->nverts);
+        }
+        else {
+            ++i;
+        }
+    }
 
     if(tri->nverts < MINPOINTS) {
         fprintf(stderr, 
@@ -452,7 +466,7 @@ void dtriangulate(struct dTriangulation *tri) {
     // DEBUG
     // FILE *f = fopen("points.txt", "w");
 
-    // for(int i = 0; i < tri->npoints; ++i) {
+    // for(int i = 0; i < tri->nverts; ++i) {
     //  fprintf(f, "%f, %f\n", XX(&v[i]), YY(&v[i]));
     // }
 
@@ -474,7 +488,7 @@ void dtriangulate(struct dTriangulation *tri) {
     // if(iter == 0) {
     //  FILE *f = fopen("adj.txt", "w");
 
-    //  for(int i = 0; i < tri->npoints; ++i) {
+    //  for(int i = 0; i < tri->nverts; ++i) {
     //      fprintf(f, "%f, %f: ", XX(&v[i]), YY(&v[i]));
     //      if(v[i].adj) {
     //          struct vertNode *n = v[i].adj;
