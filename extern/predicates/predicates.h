@@ -1,5 +1,6 @@
 /* This header file was created to be used with Jonathan Richard Shewchuk's 
-/* routines for fast robust geometric predicates (see below)
+ * routines for fast robust geometric predicates (see below)
+ */
 
 /*****************************************************************************/
 /*                                                                           */

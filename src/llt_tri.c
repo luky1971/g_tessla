@@ -42,8 +42,6 @@ void llt_delaunay_area(	const char *traj_fname,
 	areas->area = NULL;
 	areas->area2D = NULL;
 	areas->area2Dbox = NULL;
-	areas->area1 = NULL;
-	areas->area2 = NULL;
 
 	read_traj(traj_fname, &pre_x, &box, &(areas->nframes), &(areas->natoms), oenv);
 
