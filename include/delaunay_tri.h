@@ -3,16 +3,20 @@
  *
  * Delaunay triangulation implementation based on the algorithms presented by
  *
- * 	Der-Tsai Lee and Bruce J. Schachter, 
- 	"Two Algorithms for Constructing the Delaunay Triangulation," 
-	International Journal of Computer and Information Science 9(3):219-242, 1980
+ * Lee, D.T. and Schachter, B.J. 
+ * Two algorithms for constructing a Delaunay triangulation. 
+ * International Journal of Computer & Information Sciences 1980;9(3):219-242.
  *
  * and
  *
- * 	Leonidas J. Guibas and Jorge Stolfi, 
-	"Primitives for the Manipulation of General Subdivisions and the Computation of Voronoi Diagrams," 
-	ACM Transactions on Graphics 4(2):74-123, April 1985
+ * Guibas, L. and Stolfi, J. 
+ * Primitives for the manipulation of general subdivisions and the computation of Voronoi. 
+ * ACM Trans. Graph. 1985;4(2):74-123.
  *
+ * This implementation uses exact arithmetic routines and geometric predicates provided by
+ *
+ * Shewchuk, J.R. 1996. 
+ * Routines for Arbitrary Precision Floating-point Arithmetic and Fast Robust Geometric Predicates 
  */
 
 #include "predicates.h"

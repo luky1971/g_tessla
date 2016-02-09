@@ -3,16 +3,20 @@
  *
  * Delaunay triangulation implementation based on the algorithms presented by
  *
- * 	Der-Tsai Lee and Bruce J. Schachter, 
- 	"Two Algorithms for Constructing the Delaunay Triangulation," 
-	International Journal of Computer and Information Science 9(3):219-242, 1980
+ * Lee, D.T. and Schachter, B.J. 
+ * Two algorithms for constructing a Delaunay triangulation. 
+ * International Journal of Computer & Information Sciences 1980;9(3):219-242.
  *
  * and
  *
- * 	Leonidas J. Guibas and Jorge Stolfi, 
-	"Primitives for the Manipulation of General Subdivisions and the Computation of Voronoi Diagrams," 
-	ACM Transactions on Graphics 4(2):74-123, April 1985
+ * Guibas, L. and Stolfi, J. 
+ * Primitives for the manipulation of general subdivisions and the computation of Voronoi. 
+ * ACM Trans. Graph. 1985;4(2):74-123.
  *
+ * This implementation uses exact arithmetic routines and geometric predicates provided by
+ *
+ * Shewchuk, J.R. 1996. 
+ * Routines for Arbitrary Precision Floating-point Arithmetic and Fast Robust Geometric Predicates 
  */
 
 #include "delaunay_tri.h"
@@ -22,7 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DTEPSILON 1e-8 // TODO: explore different epsilon values
+#define DTEPSILON 1e-12 // TODO: explore different epsilon values
 #define MINPOINTS 2
 
 
@@ -148,13 +152,14 @@ static bool leftOf(	const struct vert *x,
 	return ccw(x, ea, eb);
 }
 
-// Acknowledgments:
-// Baker, M. (2015). Maths - Matrix algebra - Determinants 4D.
-// http://www.euclideanspace.com/maths/algebra/matrix/functions/determinant/fourD/index.htm
 static inline bool inCircle(const struct vert *a, 
 							const struct vert *b, 
 							const struct vert *c, 
 							const struct vert *d) {
+	// Acknowledgments:
+	// Baker, M. (2015). Maths - Matrix algebra - Determinants 4D.
+	// http://www.euclideanspace.com/maths/algebra/matrix/functions/determinant/fourD/index.htm
+
 	// dtreal m[4][3] = {
 	// 	{XX(a), YY(a)},
 	// 	{XX(b), YY(b)},
@@ -180,7 +185,7 @@ static inline bool inCircle(const struct vert *a,
 	// m[0][2] * m[1][0] * m[2][1] - m[0][0] * m[1][2] * m[2][1] -
 	// m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2]) > DTEPSILON;
 
-	return incircle(pcoord(a), pcoord(b), pcoord(c), pcoord(d)) > 0.0; // TODO: >= or > ???
+	return incircle(pcoord(a), pcoord(b), pcoord(c), pcoord(d)) > 0.0;
 }
 
 
@@ -408,6 +413,8 @@ void dtinit() {
 }
 
 void dtriangulate(struct dTriangulation *tri) {
+	// static int iter = 0;
+
 	if(tri->npoints < MINPOINTS) {
 		fprintf(stderr, 
 			"TRIANGULATION ERROR: Only %d points? That's not enough!\n", 
@@ -419,6 +426,7 @@ void dtriangulate(struct dTriangulation *tri) {
 	// TODO: sort indexes instead of vert structs (less memory movement),
 	// then remove indexes with duplicate coordinates,
 	// then construct verts!
+	// (test performance difference)
 	struct vert *v = (struct vert*)malloc(tri->npoints * sizeof(struct vert));
 
 	for(int i = 0; i < tri->npoints; ++i) {
@@ -463,21 +471,24 @@ void dtriangulate(struct dTriangulation *tri) {
 	ord_dtriangulate(v, 0, tri->nverts - 1, &l, &r);
 
 	// DEBUG
-	// FILE *f = fopen("adj.txt", "w");
+	// if(iter == 0) {
+	// 	FILE *f = fopen("adj.txt", "w");
 
-	// for(int i = 0; i < tri->npoints; ++i) {
-	// 	fprintf(f, "%f, %f: ", XX(&v[i]), YY(&v[i]));
-	// 	if(v[i].adj) {
-	// 		struct vertNode *n = v[i].adj;
-	// 		do {
-	// 			fprintf(f, "%f, %f; ", XX(n->v), YY(n->v));
-	// 			n = n->next;
-	// 		} while(n && n != v[i].adj);
-	// 		fprintf(f, "\n");
+	// 	for(int i = 0; i < tri->npoints; ++i) {
+	// 		fprintf(f, "%f, %f: ", XX(&v[i]), YY(&v[i]));
+	// 		if(v[i].adj) {
+	// 			struct vertNode *n = v[i].adj;
+	// 			do {
+	// 				fprintf(f, "%f, %f; ", XX(n->v), YY(n->v));
+	// 				n = n->next;
+	// 			} while(n && n != v[i].adj);
+	// 			fprintf(f, "\n");
+	// 		}
 	// 	}
-	// }
 
-	// fclose(f);
+	// 	fclose(f);
+	// }
+	// ++iter;
 	//
 
 	// convert the triangulation into triangle list and store in tri->triangles
@@ -594,11 +605,13 @@ static void convertTrisFreeVerts(struct vert *v) {
 	int nverts = v[0].mtri->nverts;
 	for(int i = 0; i < nverts; ++i) {
 		vn = v[i].adj;
-		if(vn) {
+		if(vn && vn->next != vn) {
 			do {
-				if(vn->next != vn 
-					&& vn->v->index >= 0 
+				if(vn->v->index >= 0 
 					&& vn->next->v->index >= 0) {
+					if(vn->next == v[i].adj && !rightOf(vn->v, &v[i], vn->next->v)) {
+						break; // on convex hull. 
+					}
 					v[i].mtri->triangles[3*ntri] = v[i].index;
 					v[i].mtri->triangles[3*ntri+1] = vn->v->index;
 					v[i].mtri->triangles[3*ntri+2] = vn->next->v->index;
