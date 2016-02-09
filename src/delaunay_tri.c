@@ -27,16 +27,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DTEPSILON 1e-12 // TODO: explore different epsilon values
+#define DTEPSILON 1e-12
 #define MINPOINTS 2
 
 
 struct vert {
-    struct dTriangulation *mtri; // TODO: find more efficient way of storing this thread-safely!
-    // (ex. define your own sorting method that takes in a dTriangulation parameter so you don't 
-    // need to make this pointer globally accessible)
-    // OR have vert store pointer directly to its x-coordinate instead of an index
-    int index;
+    dtreal *coord;
     struct vertNode *adj;
 };
 
@@ -46,7 +42,8 @@ struct vertNode {
 };
 
 
-static inline dtreal *pcoord(const struct vert *v);
+static inline int INDEX(const struct vert *v, 
+                        struct dTriangulation *tri);
 static dtreal XX(const struct vert *v);
 static dtreal YY(const struct vert *v);
 
@@ -99,18 +96,18 @@ static void ord_dtriangulate(   struct vert *v,
 
 // We are not liable for any lethal or non-lethal harm caused to you by this function. 
 // Be warned.
-static void convertTrisFreeVerts(struct vert *v);
+static void convertTrisFreeAdj(struct vert *v, struct dTriangulation *tri);
 
-static inline dtreal *pcoord(const struct vert *v) {
-    return v->mtri->points + 2 * v->index;
+static inline int INDEX(const struct vert *v, struct dTriangulation *tri) {
+    return (v->coord - tri->points) / 2;
 }
 
 static inline dtreal XX(const struct vert *v) {
-    return v->mtri->points[2 * v->index];
+    return v->coord[0];
 }
 
-static inline dtreal YY(const struct vert *v) {
-    return v->mtri->points[2 * v->index + 1];
+static inline dtreal YY(const struct vert *v) {;
+    return v->coord[1];
 }
 
 
@@ -138,7 +135,7 @@ static inline bool ccw( const struct vert *a,
 
     // return (xa * (yb - yc) - ya * (xb - xc) + xb * yc - yb * xc) > DTEPSILON;
 
-    return orient2d(pcoord(a), pcoord(b), pcoord(c)) > 0.0;
+    return orient2d(a->coord, b->coord, c->coord) > 0.0;
 }
 
 static bool rightOf(const struct vert *x, 
@@ -186,7 +183,7 @@ static inline bool inCircle(const struct vert *a,
     // m[0][2] * m[1][0] * m[2][1] - m[0][0] * m[1][2] * m[2][1] -
     // m[0][1] * m[1][0] * m[2][2] + m[0][0] * m[1][1] * m[2][2]) > DTEPSILON;
 
-    return incircle(pcoord(a), pcoord(b), pcoord(c), pcoord(d)) > 0.0;
+    return incircle(a->coord, b->coord, c->coord, d->coord) > 0.0;
 }
 
 
@@ -198,8 +195,8 @@ static void deleteAdj(struct vert *v) {
             vn = vn->next;
             free(prev);
         } while(vn != v->adj);
+        v->adj = NULL;
     }
-    v->adj = NULL;
 }
 
 static inline void insertNodeAfter(struct vertNode *n, struct vertNode *in) {
@@ -431,8 +428,7 @@ void dtriangulate(struct dTriangulation *tri) {
     struct vert *v = (struct vert*)malloc(tri->npoints * sizeof(struct vert));
 
     for(int i = 0; i < tri->npoints; ++i) {
-        v[i].mtri = tri;
-        v[i].index = i;
+        v[i].coord = tri->points + 2*i;
         v[i].adj = NULL;
     }
 
@@ -506,7 +502,8 @@ void dtriangulate(struct dTriangulation *tri) {
     //
 
     // convert the triangulation into triangle list and store in tri->triangles
-    convertTrisFreeVerts(v);
+    convertTrisFreeAdj(v, tri);
+    free(v);
 }
 
 // triangulates given vertices assuming that they are lexicographically ordered
@@ -557,10 +554,9 @@ static void ord_dtriangulate(   struct vert *v,
             connectVerts(li, ri);
 
             r1 = pred(ri, li);
-            if(!r1) break;
             if(leftOf(r1, li, ri)) {
                 r2 = pred(ri, r1);
-                while(r2 && inCircle(r1, li, ri, r2)) {
+                while(inCircle(r1, li, ri, r2)) {
                     cutVerts(ri, r1);
                     r1 = r2;
                     r2 = pred(ri, r1);
@@ -571,10 +567,9 @@ static void ord_dtriangulate(   struct vert *v,
             }
 
             l1 = succ(li, ri);
-            if(!l1) break;
             if(rightOf(l1, ri, li)) {
                 l2 = succ(li, l1);
-                while(l2 && inCircle(li, ri, l1, l2)) {
+                while(inCircle(li, ri, l1, l2)) {
                     cutVerts(li, l1);
                     l1 = l2;
                     l2 = succ(li, l1);
@@ -605,43 +600,37 @@ static void ord_dtriangulate(   struct vert *v,
     // else, num points <=1; invalid input so do nothing
 }
 
-// WARNING: this function frees the given verts and their adj nodes.
+// WARNING: this function frees the adj nodes of the given verts.
+// This is done to avoid using an extra variable to mark verts as "complete".
 // The enumerated triangle indexes are stored in tri->triangles.
-// The given verts are invalidated in order to avoid using an extra variable
-// for marking verts as "completed"
-static void convertTrisFreeVerts(struct vert *v) {
+static void convertTrisFreeAdj(struct vert *v, struct dTriangulation *tri) {
     int ntri = 0;
     // 2(n-1)-k is number of triangles, n = nverts and k = num points on convex hull
     // 2 is used for k to accomodate case of two input points
-    v[0].mtri->triangles = (int*)malloc(3 * (2 * (v[0].mtri->nverts - 1) - 2) * sizeof(int));
+    tri->triangles = (int*)malloc(3 * (2 * (tri->nverts - 1) - 2) * sizeof(int));
 
     struct vertNode *vn;
-    int nverts = v[0].mtri->nverts;
-    for(int i = 0; i < nverts; ++i) {
+    for(int i = 0; i < tri->nverts; ++i) {
         vn = v[i].adj;
         if(vn && vn->next != vn) {
             do {
-                if(vn->v->index >= 0 
-                    && vn->next->v->index >= 0) {
+                if(vn->v->adj 
+                    && vn->next->v->adj) {
                     if(vn->next == v[i].adj && !rightOf(vn->v, &v[i], vn->next->v)) {
                         break; // on convex hull. 
                     }
-                    v[i].mtri->triangles[3*ntri] = v[i].index;
-                    v[i].mtri->triangles[3*ntri+1] = vn->v->index;
-                    v[i].mtri->triangles[3*ntri+2] = vn->next->v->index;
+                    tri->triangles[3*ntri] = INDEX(&v[i], tri);
+                    tri->triangles[3*ntri+1] = INDEX(vn->v, tri);
+                    tri->triangles[3*ntri+2] = INDEX(vn->next->v, tri);
                     ++ntri;
                 }
                 vn = vn->next;
             } while(vn != v[i].adj);
         }
-        v[i].index = -1; // mark this vert as complete
         deleteAdj(&v[i]);
     }
 
-    v[0].mtri->triangles = realloc(v[0].mtri->triangles, 3 * ntri * sizeof(int)); // shrink memory if needed
-    // TODO: see if removing realloc gives speedup
-    v[0].mtri->ntriangles = ntri;
-
-    free(v);
+    tri->triangles = realloc(tri->triangles, 3 * ntri * sizeof(int)); // shrink memory if needed
+    tri->ntriangles = ntri;
 }
 
