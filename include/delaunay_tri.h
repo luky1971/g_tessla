@@ -1,5 +1,5 @@
 /*
- * Copyright Ahnaf Siddiqui and Sameer Varma.
+ * Copyright 2016 Ahnaf Siddiqui and Sameer Varma
  *
  * Delaunay triangulation implementation based on the algorithms presented by
  *
@@ -16,7 +16,7 @@
  * This implementation uses exact arithmetic routines and geometric predicates provided by
  *
  * Shewchuk, J.R. 1996. 
- * Routines for Arbitrary Precision Floating-point Arithmetic and Fast Robust Geometric Predicates 
+ * Routines for Arbitrary Precision Floating-point Arithmetic and Fast Robust Geometric Predicates.
  */
 
 #include "predicates.h"

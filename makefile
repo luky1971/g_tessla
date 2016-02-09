@@ -1,13 +1,12 @@
 cc ?= gcc
-# CFLAGS += -std=c99 -O3
-# CFLAGS += -std=c99 -DLLT_DEBUG
-CFLAGS += -std=c99 -g
+CFLAGS += -std=c99 -O3 -DLLT_BENCH
+# CFLAGS += -std=c99 -DLLT_DEBUG -g
+# CFLAGS += -std=c99 -g
 
 GROMACS = /usr/local/gromacs
 VGRO = 5
 
 GKUT = extern/gkut
-# TRI = extern/triangle
 PRED = extern/predicates
 
 INCLUDE = include
@@ -47,7 +46,6 @@ $(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt
 	&& make CC=$(cc) -C $(PRED) \
 	&& $(cc) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o $(BUILD)/delaunay_tri.o \
 	$(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(PRED)/predicates.o $(LINKGRO) $(LIBGRO) $(LIBS)
-#TODO: to use triangle, add make CC=$(cc) trilibrary -C $(TRI) and $(TRI)/triangle.o above
 
 install: $(BUILD)/lltessellator
 	install $(BUILD)/lltessellator $(INSTALL)
@@ -59,7 +57,6 @@ $(BUILD)/lltessellator.o: $(SRC)/lltessellator.c $(INCLUDE)/llt_grid.h $(INCLUDE
 $(BUILD)/llt_tri.o: $(SRC)/llt_tri.c $(INCLUDE)/llt_tri.h $(INCLUDE)/delaunay_tri.h
 	$(cc) $(CFLAGS) -o $(BUILD)/llt_tri.o -c $(SRC)/llt_tri.c \
 	$(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include -I$(PRED)
-#TODO: to use triangle, add -I$(TRI) above
 
 $(BUILD)/llt_grid.o: $(SRC)/llt_grid.c $(INCLUDE)/llt_grid.h
 	$(cc) $(CFLAGS) -o $(BUILD)/llt_grid.o -c $(SRC)/llt_grid.c \
@@ -72,4 +69,3 @@ clean:
 	make clean -C $(GKUT) \
 	&& make clean -C $(PRED) \
 	&& rm -f $(BUILD)/*.o $(BUILD)/lltessellator
-# && make distclean -C $(TRI) \

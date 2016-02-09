@@ -1,5 +1,12 @@
 /*
- * Copyright Ahnaf Siddiqui and Sameer Varma.
+ * Copyright 2016 Ahnaf Siddiqui and Sameer Varma
+ *
+ * This program uses the GROMACS molecular simulation package API.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed at http://www.gromacs.org.
  */
 
 #ifdef LLT_BENCH
@@ -23,24 +30,30 @@ int main(int argc, char *argv[]) {
 #endif
 
 	const char *desc[] = {
-		"lltessellator reads a trajectory file, tessellates its coordinates, and calculates 3D surface area.\n",
-		"It can either tessellate the points in each frame using delaunay triangulation and calculate each frame's surface area, \n",
-		"or it can load the points from all frames into a weighted grid and tessellate the grid based on density.\n",
-		"Set the -dense option to use the latter method (which is experimental; delaunay, the default, is more accurate).\n",
+		"lltessellator (leaflet tessellator) reads a trajectory file, tessellates its coordinates, \n",
+		"and calculates 3D surface area.\n\n",
+		"The trajectory should represent a planar fluctuating surface such as a lipid leaflet.\n",
+		"It is specified by the -f option (supported formats=xtc,trr,pdb), and can be filtered using an index file \n",
+		"by the -n option. An output filename can be specified with the -o option.\n\n",
+		"lltessellator can either calculate every frame's 3D surface area using delaunay triangulation on the horizontal plane, \n",
+		"or it can load the points from all frames into a weighted 3D grid and tessellate the grid \n",
+		"based on highest weight z-coordinates along the horizontal plane.\n",
+		"This latter method is experimental and not supported; delaunay triangulation, the default, is more accurate.\n",
+		"To use the experimental weighted grid method, set the -dense option.\n\n",
 		"When using delaunay triangulation, the surface area can be corrected for periodic bounding conditions.\n",
 		"The correction is performed by inserting points at a given interval along the edges of the simulation box \n",
 		"with z-coordinates that are the weighted average of the two points closest to the two edges in that interval.\n",
 		"Points are inserted at the corners of the box with the same z coordinate, which is the average of the four points \n",
 		"closest to the four corners of the box.\n",
 		"To use this correction method for periodic bounding conditions, set the option -corr X \n",
-		"where X is the desired spacing of the edge correction point intervals.\n",
+		"where X is the desired spacing of the edge correction point intervals.\n\n",
 		"The -2 option for calculating 2D area from triangulation is mostly for testing purposes, \n",
-		"as this should be equivalent to the 2D box area which is calculated and output anyways.\n",
+		"as this should be equivalent to the 2D box area which is calculated and output anyways.\n\n",
 		"If you set the -print option for delaunay triangulation, the resulting .node and .ele files are numbered by frame \n",
 		"and can be viewed by Jonathan R. Shewchuck's program showme\n",
 		"(found here: https://www.cs.cmu.edu/~quake/showme.html)\n",
 		"BE WARNED, the -print option produces a .node and .ele file for EVERY frame AND disables parallelization!\n",
-		"So don't be surprised if you come back and see a hundred thousand new files in your current directory ;)\n"
+		"(So don't be surprised when you come back hours later and see a hundred thousand new files in your current directory)\n"
 	};
 	const char *fnames[efT_NUMFILES];
 	output_env_t oenv = NULL;
