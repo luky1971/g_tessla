@@ -24,15 +24,15 @@
  * but are stored as single pointers and addressed using pointer arithmetic.
  */
 struct tessellated_grid {
-	real *weights; // [dimx][dimy][dimz]
-	int *heightmap; // [dimx][dimy]. Holds the z-index of the grid point with the maximum weight for each x-y column
-	real *areas; // [dimx-1][dimy-1]. Holds the triangulated area of each grid cell
-	int dimx, dimy, dimz; // Number of grid points in each dimension (this is number of grid cells + 1)
-	real cell_width; // The length of one edge of a grid cell in trajectory space
-	real minx, miny, minz; // The coordinates of the grid's origin in trajectory space
-	int num_empty; // The number of grid cells that have zero-weight corner(s) (and are therefore excluded from tessellation)
-	real surface_area; // The total triangulated/mesh surface area of the grid's heightmap
-	real area_per_particle; // The mesh surface area per trajectory particle
+    real *weights; // [dimx][dimy][dimz]
+    int *heightmap; // [dimx][dimy]. Holds the z-index of the grid point with the maximum weight for each x-y column
+    real *areas; // [dimx-1][dimy-1]. Holds the triangulated area of each grid cell
+    int dimx, dimy, dimz; // Number of grid points in each dimension (this is number of grid cells + 1)
+    real cell_width; // The length of one edge of a grid cell in trajectory space
+    real minx, miny, minz; // The coordinates of the grid's origin in trajectory space
+    int num_empty; // The number of grid cells that have zero-weight corner(s) (and are therefore excluded from tessellation)
+    real surface_area; // The total triangulated/mesh surface area of the grid's heightmap
+    real area_per_particle; // The mesh surface area per trajectory particle
 };
 
 
@@ -50,7 +50,7 @@ real weight_dist2(rvec traj_point, rvec grid_point);
 
 
 void llt_grid_area(const char *traj_fname, const char *ndx_fname, 
-	real cell_width, real (*fweight)(rvec, rvec), output_env_t *oenv, struct tessellated_grid *grid);
+    real cell_width, real (*fweight)(rvec, rvec), output_env_t *oenv, struct tessellated_grid *grid);
 /* Reads a trajectory file and then calculates approximate surface area (see the f_llt_grid_area function below).
  * If ndx_fname is not null, only a selection within the trajectory will be included in the grid.
  * output_env_t *oenv is needed for reading trajectory files.
@@ -59,7 +59,7 @@ void llt_grid_area(const char *traj_fname, const char *ndx_fname,
  */
 
 void f_llt_grid_area(rvec **x, int nframes, int natoms, 
-	real cell_width, real (*fweight)(rvec, rvec), struct tessellated_grid *grid);
+    real cell_width, real (*fweight)(rvec, rvec), struct tessellated_grid *grid);
 /* Calculates the approximate surface area of a trajectory by tessellating the coordinates in a 3D grid.
  * Stores grid and area information in tessellated_grid *grid.
  * Call this if you have already read the trajectory (otherwise call llt_grid_area above).

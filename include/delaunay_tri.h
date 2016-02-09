@@ -25,13 +25,13 @@ typedef REAL dtreal; // test performance and accuracy of double vs float
 
 
 struct dTriangulation {
-	dtreal *points; // coordinates of input points (2 ordered reals, x and y, per point)
-	int npoints;
+    dtreal *points; // coordinates of input points (2 ordered reals, x and y, per point)
+    int npoints;
 
-	int *triangles; // list of delaunay triangles as groups of three point indexes 
-					// (index = order of point in given points array)
-	int ntriangles;
-	int nverts; // equivalent to the number of non-duplicate input points
+    int *triangles; // list of delaunay triangles as groups of three point indexes 
+                    // (index = order of point in given points array)
+    int ntriangles;
+    int nverts; // equivalent to the number of non-duplicate input points
 };
 
 
