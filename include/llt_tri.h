@@ -44,20 +44,36 @@ void llt_delaunay_area(	const char *traj_fname,
 						real corr, 
 						struct tri_area *areas, 
 						unsigned char flags);
+/* Reads a trajectory file and tessellates all of its frames using delaunay triangulation.
+ * If ndx_fname is not null, only a selection within the trajectory will be tessellated.
+ * output_env_t *oenv is needed for reading trajectory files.
+ * You can initialize one using output_env_init() in Gromacs's oenv.h.
+ * Memory is allocated for arrays in the tri_area struct. Call free_tri_area when done.
+ * See above for flags.
+ */
 
 void delaunay_surface_area(	const rvec *x, 
 							int natoms, 
 							unsigned char flags,
 							real *a2D,
 							real *a3D);
-/* a2D and/or a3D can be NULL.
+/* Tessellates the given array of coordinates using delaunay triangulation 
+ * and calculates 2D and 3D area, stored in a2D and a3D.
+ * a2D and/or a3D can be NULL.
+ * See above for flags.
  */
 
 void print_areas(const char *fname, const struct tri_area *areas);
+/* Formats and prints the data in a tri_area struct to an output file.
+ */
 
 void free_tri_area(struct tri_area *areas);
+/* Frees the dynamic memory in a tri_area struct.
+ */
 
 
+/* Calculates the area of the triangle formed by three points in 3D space.
+ */
 static inline real area_tri(const rvec a, 
 							const rvec b, 
 							const rvec c) {

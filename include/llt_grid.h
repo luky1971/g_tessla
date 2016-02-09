@@ -19,7 +19,10 @@
 #include "statutil.h"
 #endif
 
-/* Struct for a tessellated grid and its associated information */
+/* Struct for a weighted 3D grid and its associated information.
+ * Note: some of the arrays in this struct are multidimensional as indicated by the comments,
+ * but are stored as single pointers and addressed using pointer arithmetic.
+ */
 struct tessellated_grid {
 	real *weights; // [dimx][dimy][dimz]
 	int *heightmap; // [dimx][dimy]. Holds the z-index of the grid point with the maximum weight for each x-y column
@@ -50,6 +53,9 @@ void llt_grid_area(const char *traj_fname, const char *ndx_fname,
 	real cell_width, real (*fweight)(rvec, rvec), output_env_t *oenv, struct tessellated_grid *grid);
 /* Reads a trajectory file and then calculates approximate surface area (see the f_llt_grid_area function below).
  * If ndx_fname is not null, only a selection within the trajectory will be included in the grid.
+ * output_env_t *oenv is needed for reading trajectory files.
+ * You can initialize one using output_env_init() in Gromacs's oenv.h.
+ * Memory is allocated for arrays in grid. Call free_grid when done.
  */
 
 void f_llt_grid_area(rvec **x, int nframes, int natoms, 
@@ -77,6 +83,9 @@ void load_grid(rvec **x, int nframes, int natoms, real (*fweight)(rvec, rvec), s
  */
 
 void gen_heightmap(struct tessellated_grid *grid);
+/* Finds the z-index of the grid point with the maximum weight for each x-y column in the grid.
+ * This data is stored in grid->heightmap
+ */
 
 void tessellate_grid(struct tessellated_grid *grid);
 /* Tessellates the heightmap in the given grid and calculates the total area of the triangulated surface. 

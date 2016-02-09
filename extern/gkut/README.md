@@ -3,7 +3,7 @@
 gkut is a set of "kinda useful tools" that use the Gromacs API.
 
 ### Copyright 
-(c) 2015 Ahnaf Siddiqui
+(c) 2016 Ahnaf Siddiqui
 
 gkut uses the GROMACS molecular simulation package library,  
 Copyright (c) 1991-2000, University of Groningen, The Netherlands.  

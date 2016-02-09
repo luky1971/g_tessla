@@ -29,7 +29,7 @@ and can be viewed by Jonathan R. Shewchuck's program showme (found here: https:/
 BE WARNED, the -print option produces a .node and .ele file for EVERY frame AND disables parallelization!
 (So don't be surprised when you come back hours later and see a hundred thousand new files in your current directory)
 
-By default, lltessellator is parallelized with OpenMP (see installtion instructions below).
+By default, lltessellator is parallelized with OpenMP (see installation instructions below).
 To disable parallelization at runtime, add the option -nopar.
 
 ### INSTALLATION
