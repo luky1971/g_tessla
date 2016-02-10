@@ -1,6 +1,7 @@
 CC ?= gcc
-CFLAGS += -std=c99 -O3 -DLLT_BENCH
-# CFLAGS += -std=c99 -DLLT_DEBUG -g
+CFLAGS += -std=c99 -O3
+# CFLAGS += -std=c99 -O3 -DLLT_BENCH
+# CFLAGS += -std=c99 -g -DLLT_DEBUG
 # CFLAGS += -std=c99 -g
 
 GROMACS = /usr/local/gromacs
