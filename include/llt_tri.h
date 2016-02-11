@@ -53,6 +53,7 @@ void llt_delaunay_area( const char *traj_fname,
  */
 
 void delaunay_surface_area( const rvec *x, 
+                            matrix box, 
                             int natoms, 
                             unsigned char flags,
                             real *a2D,

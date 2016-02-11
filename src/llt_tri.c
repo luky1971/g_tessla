@@ -25,6 +25,14 @@
 #include "delaunay_tri.h"
 
 
+void print_triangulation3D( const rvec *x, 
+                            matrix box, 
+                            const struct dTriangulation *tri, 
+                            int modelnum, 
+                            const char *fname);
+/* Prints a pdb file with connections between the triangulated atoms.
+ */
+
 void print_dtrifiles(   const struct dTriangulation *tri, 
                         const char *node_name, 
                         const char *ele_name);
@@ -262,7 +270,7 @@ void llt_delaunay_area( const char *traj_fname,
             // Calculate area including added edge and corner points
             real *a2D = NULL;
             if(flags & LLT_2D)  a2D = &(areas->area2D[fr]);
-            delaunay_surface_area(x[fr], n, flags, a2D, &(areas->area[fr]));
+            delaunay_surface_area(x[fr], box[fr], n, flags, a2D, &(areas->area[fr]));
 
             sfree(x[fr]);
         }
@@ -271,17 +279,26 @@ void llt_delaunay_area( const char *traj_fname,
         print_log("Triangulating %d frames...\n", areas->nframes);
 
 #pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
-        for(int i = 0; i < areas->nframes; ++i) {
+        for(int fr = 0; fr < areas->nframes; ++fr) {
 #if defined _OPENMP && defined LLT_DEBUG
             print_log("%d threads triangulating.\n", omp_get_num_threads());
 #endif
+            
+            // BOX PRINT
+            // if(fr == 0) {
+            //     printf("%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
+            //         box[fr][0][0], box[fr][0][1], box[fr][0][2], 
+            //         box[fr][1][0], box[fr][1][1], box[fr][1][2],
+            //         box[fr][2][0], box[fr][2][1], box[fr][2][2]);
+            // }
+
             // 2D area of box
-            areas->area2Dbox[i] = box[i][0][0] * box[i][1][1];
+            areas->area2Dbox[fr] = box[fr][0][0] * box[fr][1][1];
 
             real *a2D = NULL;
-            if(flags & LLT_2D)  a2D = &(areas->area2D[i]);
-            delaunay_surface_area(x[i], areas->natoms, flags, a2D, &(areas->area[i]));
-            sfree(x[i]);
+            if(flags & LLT_2D)  a2D = &(areas->area2D[fr]);
+            delaunay_surface_area(x[fr], box[fr], areas->natoms, flags, a2D, &(areas->area[fr]));
+            sfree(x[fr]);
         }
     }
 
@@ -295,7 +312,8 @@ void llt_delaunay_area( const char *traj_fname,
 #endif
 }
 
-void delaunay_surface_area( const rvec *x, 
+void delaunay_surface_area( const rvec *x,
+                            matrix box, 
                             int natoms, 
                             unsigned char flags,
                             real *a2D,
@@ -322,7 +340,10 @@ void delaunay_surface_area( const rvec *x,
         sprintf(fname1, "triangles%d.node", iter);
         sprintf(fname2, "triangles%d.ele", iter);
         print_dtrifiles(&tri, fname1, fname2);
-    } 
+    }
+
+    // TODO: Add flag check!
+    print_triangulation3D(x, box, &tri, iter - 1, "tri3D.pdb");
 
     sfree(tri.points);
 
@@ -374,6 +395,38 @@ void delaunay_surface_area( const rvec *x,
     free(tri.triangles);
 }
 
+
+void print_triangulation3D( const rvec *x, 
+                            matrix box, 
+                            const struct dTriangulation *tri, 
+                            int modelnum, 
+                            const char *fname) {
+    FILE *pdb = fopen(fname, "a");
+
+    if(box) {
+        fprintf(pdb, "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n", 
+        box[0][0] * 10, box[1][1] * 10, box[2][2] * 10, 90.0, 90.0, 90.0);
+    }
+
+    fprintf(pdb, "MODEL %4d\n", modelnum);
+    for(int i = 0; i < tri->npoints; ++i) {
+        fprintf(pdb, "ATOM  %5d                   %8.3f%8.3f%8.3f%6.2f%6.2f\n", 
+            i + 1, x[i][XX] * 10, x[i][YY] * 10, x[i][ZZ] * 10, 1.0, 0.0); // convert nm to angstroms
+    }
+
+    fprintf(pdb, "TER   \n");
+
+    for(int i = 0; i < tri->ntriangles; ++i) {
+        fprintf(pdb, "CONECT%5d%5d%5d\n", 
+            tri->triangles[3*i] + 1, tri->triangles[3*i+1] + 1, tri->triangles[3*i+2] + 1);
+        fprintf(pdb, "CONECT%5d%5d\n", 
+            tri->triangles[3*i+1] + 1, tri->triangles[3*i+2] + 1);
+    }
+
+    fprintf(pdb, "ENDMDL\n");
+
+    fclose(pdb);
+}
 
 void print_areas(const char *fname, const struct tri_area *areas) {
     FILE *f = fopen(fname, "w");
