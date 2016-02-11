@@ -343,7 +343,7 @@ void delaunay_surface_area( const rvec *x,
     }
 
     // TODO: Add flag check!
-    print_triangulation3D(x, box, &tri, iter - 1, "tri3D.pdb");
+    // print_triangulation3D(x, box, &tri, iter - 1, "tri3D.pdb");
 
     sfree(tri.points);
 
@@ -410,11 +410,11 @@ void print_triangulation3D( const rvec *x,
 
     fprintf(pdb, "MODEL %4d\n", modelnum);
     for(int i = 0; i < tri->npoints; ++i) {
-        fprintf(pdb, "ATOM  %5d                   %8.3f%8.3f%8.3f%6.2f%6.2f\n", 
-            i + 1, x[i][XX] * 10, x[i][YY] * 10, x[i][ZZ] * 10, 1.0, 0.0); // convert nm to angstroms
+        fprintf(pdb, "ATOM  %5d                   %8.3f%8.3f%8.3f\n", 
+            i + 1, x[i][XX] * 10, x[i][YY] * 10, x[i][ZZ] * 10); // convert nm to angstroms
     }
 
-    fprintf(pdb, "TER   \n");
+    // fprintf(pdb, "TER   \n");
 
     for(int i = 0; i < tri->ntriangles; ++i) {
         fprintf(pdb, "CONECT%5d%5d%5d\n", 
