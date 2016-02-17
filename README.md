@@ -30,7 +30,7 @@ BE WARNED, the -print option produces a .node and .ele file for EVERY frame AND 
 (So don't be surprised when you come back hours later and see a hundred thousand new files in your current directory)
 
 By default, lltessellator is parallelized with OpenMP (see installation instructions below).
-To disable parallelization at runtime, add the option -nopar.
+To set the number of threads at runtime, set -nthreads X where X is the number of threads to use. The default behavior is to use the maximum number of cores available.
 
 ### INSTALLATION
 

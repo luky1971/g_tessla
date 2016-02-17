@@ -22,10 +22,9 @@
 
 // Flags
 enum {
-    LLT_NOPAR = 1, // Prevents multithreading
-    LLT_CORRECT = 2, // Correct areas for periodic bounding conditions
-    LLT_2D = 4, // Calculate 2D surface area as well
-    LLT_PRINT = 8 // Print triangle data that can be visualized using, for example, the 'showme' program
+    LLT_CORRECT = 1, // Correct areas for periodic bounding conditions
+    LLT_2D = 2, // Calculate 2D surface area as well
+    LLT_PRINT = 4, // Print triangle data that can be visualized using, for example, the 'showme' program
 };
 
 // Struct for area output data.
@@ -42,6 +41,7 @@ void llt_delaunay_area( const char *traj_fname,
                         const char *ndx_fname, 
                         output_env_t *oenv, 
                         real corr, 
+                        int nthreads, 
                         struct tri_area *areas, 
                         unsigned char flags);
 /* Reads a trajectory file and tessellates all of its frames using delaunay triangulation.

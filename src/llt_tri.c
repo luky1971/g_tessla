@@ -42,6 +42,7 @@ void llt_delaunay_area( const char *traj_fname,
                         const char *ndx_fname, 
                         output_env_t *oenv, 
                         real corr, 
+                        int nthreads, 
                         struct tri_area *areas, 
                         unsigned char flags) {
     rvec **pre_x, **x;
@@ -71,7 +72,9 @@ void llt_delaunay_area( const char *traj_fname,
 #endif
 
 #ifdef _OPENMP
-    if(!(flags & LLT_NOPAR))
+    if(nthreads > 0)
+        omp_set_num_threads(nthreads);
+    if(nthreads > 1 || nthreads < 0)
         print_log("Triangulation will be parallelized.\n");
 #endif
 
@@ -84,8 +87,11 @@ void llt_delaunay_area( const char *traj_fname,
     if(flags & LLT_CORRECT) { // add correction for periodic bounds
         print_log("Triangulating and correcting %d frames...\n", areas->nframes);
 
-#pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
+#pragma omp parallel for shared(areas,x,flags)
         for(int fr = 0; fr < areas->nframes; ++fr) {
+#if defined _OPENMP && defined LLT_DEBUG
+            print_log("%d threads triangulating.\n", omp_get_num_threads());
+#endif
             // Calculate number of edge points
             int n_edge_x = box[fr][0][0] / corr;
             int n_edge_y = box[fr][1][1] / corr;
@@ -254,18 +260,18 @@ void llt_delaunay_area( const char *traj_fname,
             sfree(x_min_inds);
             sfree(x_max_inds);
 
-    #ifdef LLT_DEBUG
-            FILE *f = fopen("points.txt", "w");
+    // #ifdef LLT_DEBUG
+    //         FILE *f = fopen("points.txt", "w");
 
-            for(int j = 0; j < n; ++j) {
-                fprintf(f, "%d: %f\t%f\t%f\n", j, x[fr][j][XX], x[fr][j][YY], x[fr][j][ZZ]);
-            }
+    //         for(int j = 0; j < n; ++j) {
+    //             fprintf(f, "%d: %f\t%f\t%f\n", j, x[fr][j][XX], x[fr][j][YY], x[fr][j][ZZ]);
+    //         }
 
-            fclose(f);
+    //         fclose(f);
 
-            print_log("Points saved to points.txt for debugging.\n");
-            exit(0);
-    #endif
+    //         print_log("Points saved to points.txt for debugging.\n");
+    //         exit(0);
+    // #endif
 
             // Calculate area including added edge and corner points
             real *a2D = NULL;
@@ -278,7 +284,7 @@ void llt_delaunay_area( const char *traj_fname,
     else { // triangulate without correction for periodic bounds
         print_log("Triangulating %d frames...\n", areas->nframes);
 
-#pragma omp parallel for if(!(flags & LLT_NOPAR)) shared(areas,x,flags)
+#pragma omp parallel for shared(areas,x,flags)
         for(int fr = 0; fr < areas->nframes; ++fr) {
 #if defined _OPENMP && defined LLT_DEBUG
             print_log("%d threads triangulating.\n", omp_get_num_threads());

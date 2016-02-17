@@ -1,4 +1,4 @@
-CC ?= gcc
+CC = gcc
 CFLAGS += -std=c99 -O3
 # CFLAGS += -std=c99 -O3 -DLLT_BENCH
 # CFLAGS += -std=c99 -g -DLLT_DEBUG

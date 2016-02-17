@@ -53,12 +53,14 @@ int main(int argc, char *argv[]) {
         "and can be viewed by Jonathan R. Shewchuck's program showme\n",
         "(found here: https://www.cs.cmu.edu/~quake/showme.html)\n",
         "BE WARNED, the -print option produces a .node and .ele file for EVERY frame AND disables parallelization!\n",
-        "(So don't be surprised when you come back hours later and see a hundred thousand new files in your current directory)\n"
+        "(So don't be surprised when you come back hours later and see a hundred thousand new files in your current directory)\n\n",
+        "If lltessellator was built with OPENMP, you can set the number of threads to use with -nthreads X,\n",
+        "where X is the number of threads to use. The default behavior is to use the maximum number of cores available.\n"
     };
     const char *fnames[efT_NUMFILES];
     output_env_t oenv = NULL;
 
-    gmx_bool nopar = FALSE;
+    int nthreads = -1;
     gmx_bool dense = FALSE;
     real corr = 0.0;
     gmx_bool a2D = FALSE;
@@ -75,7 +77,7 @@ int main(int argc, char *argv[]) {
     };
 
     t_pargs pa[] = {
-        {"-nopar", FALSE, etBOOL, {&nopar}, "prevent multithreading"},
+        {"-nthreads", FALSE, etINT, {&nthreads}, "set the number of parallel threads to use (default is max available)"}, 
         {"-dense", FALSE, etBOOL, {&dense}, "use weighted-grid tessellation instead of frame-by-frame delaunay triangulation"},
         {"-corr", FALSE, etREAL, {&corr}, "correct triangulation area for periodic bounding by given edge spacing (see readme)"},
         {"-2", FALSE, etBOOL, {&a2D}, "calculate 2D surface area from delaunay triangulation"},
@@ -109,16 +111,15 @@ int main(int argc, char *argv[]) {
         free_grid(&grid);
     }
     else {
-        if(print)   nopar = TRUE;
+        if(print)   nthreads = 1;
 
         struct tri_area areas;
 
-        unsigned long flags = ((int)nopar * LLT_NOPAR) 
-                            | ((int)(corr > CORR_EPS) * LLT_CORRECT) 
+        unsigned long flags = ((int)(corr > CORR_EPS) * LLT_CORRECT) 
                             | ((int)a2D * LLT_2D) 
                             | ((int)print * LLT_PRINT);
         
-        llt_delaunay_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, corr, &areas, flags);
+        llt_delaunay_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, corr, nthreads, &areas, flags);
 
         print_areas(fnames[efT_OUTDAT], &areas);
 
