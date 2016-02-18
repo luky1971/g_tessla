@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS += -std=c99 -O3
-# CFLAGS += -std=c99 -O3 -DLLT_BENCH
-# CFLAGS += -std=c99 -g -DLLT_DEBUG
+# CFLAGS += -std=c99 -O3 -DGTA_BENCH
+# CFLAGS += -std=c99 -g -DGTA_DEBUG
 # CFLAGS += -std=c99 -g
 
 GROMACS = /usr/local/gromacs
@@ -42,25 +42,25 @@ MCFLAGS +='
 
 .PHONY: install clean
 
-$(BUILD)/lltessellator: $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o $(BUILD)/delaunay_tri.o
+$(BUILD)/g_tessellate_area: $(BUILD)/g_tessellate_area.o $(BUILD)/gta_tri.o $(BUILD)/gta_grid.o $(BUILD)/delaunay_tri.o
 	make CC=$(CC) CFLAGS=$(MCFLAGS) GROMACS=$(GROMACS) VGRO=$(VGRO) -C $(GKUT) \
 	&& make CC=$(CC) -C $(PRED) \
-	&& $(CC) $(CFLAGS) -o $(BUILD)/lltessellator $(BUILD)/lltessellator.o $(BUILD)/llt_tri.o $(BUILD)/llt_grid.o $(BUILD)/delaunay_tri.o \
+	&& $(CC) $(CFLAGS) -o $(BUILD)/g_tessellate_area $(BUILD)/g_tessellate_area.o $(BUILD)/gta_tri.o $(BUILD)/gta_grid.o $(BUILD)/delaunay_tri.o \
 	$(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(PRED)/predicates.o $(LINKGRO) $(LIBGRO) $(LIBS)
 
-install: $(BUILD)/lltessellator
-	install $(BUILD)/lltessellator $(INSTALL)
+install: $(BUILD)/g_tessellate_area
+	install $(BUILD)/g_tessellate_area $(INSTALL)
 
-$(BUILD)/lltessellator.o: $(SRC)/lltessellator.c $(INCLUDE)/llt_grid.h $(INCLUDE)/llt_tri.h
-	$(CC) $(CFLAGS) -o $(BUILD)/lltessellator.o -c $(SRC)/lltessellator.c \
+$(BUILD)/g_tessellate_area.o: $(SRC)/g_tessellate_area.c $(INCLUDE)/gta_grid.h $(INCLUDE)/gta_tri.h
+	$(CC) $(CFLAGS) -o $(BUILD)/g_tessellate_area.o -c $(SRC)/g_tessellate_area.c \
 	$(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include
 
-$(BUILD)/llt_tri.o: $(SRC)/llt_tri.c $(INCLUDE)/llt_tri.h $(INCLUDE)/delaunay_tri.h
-	$(CC) $(CFLAGS) -o $(BUILD)/llt_tri.o -c $(SRC)/llt_tri.c \
+$(BUILD)/gta_tri.o: $(SRC)/gta_tri.c $(INCLUDE)/gta_tri.h $(INCLUDE)/delaunay_tri.h
+	$(CC) $(CFLAGS) -o $(BUILD)/gta_tri.o -c $(SRC)/gta_tri.c \
 	$(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include -I$(PRED)
 
-$(BUILD)/llt_grid.o: $(SRC)/llt_grid.c $(INCLUDE)/llt_grid.h
-	$(CC) $(CFLAGS) -o $(BUILD)/llt_grid.o -c $(SRC)/llt_grid.c \
+$(BUILD)/gta_grid.o: $(SRC)/gta_grid.c $(INCLUDE)/gta_grid.h
+	$(CC) $(CFLAGS) -o $(BUILD)/gta_grid.o -c $(SRC)/gta_grid.c \
 	$(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include
 
 $(BUILD)/delaunay_tri.o: $(SRC)/delaunay_tri.c $(INCLUDE)/delaunay_tri.h
@@ -69,4 +69,4 @@ $(BUILD)/delaunay_tri.o: $(SRC)/delaunay_tri.c $(INCLUDE)/delaunay_tri.h
 clean:
 	make clean -C $(GKUT) \
 	&& make clean -C $(PRED) \
-	&& rm -f $(BUILD)/*.o $(BUILD)/lltessellator
+	&& rm -f $(BUILD)/*.o $(BUILD)/g_tessellate_area

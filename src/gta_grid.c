@@ -9,7 +9,7 @@
  * and including many others, as listed at http://www.gromacs.org.
  */
 
-#include "llt_grid.h"
+#include "gta_grid.h"
 
 #include <float.h>
 #include <stdio.h>
@@ -20,18 +20,18 @@
 #include "gkut_io.h"
 #include "gkut_log.h"
 
-static real llt_diag, llt_diag2;
+static real gta_diag, gta_diag2;
 
 real weight_dist(rvec traj_point, rvec grid_point) {
-    return llt_diag - sqrt(distance2(traj_point, grid_point));
+    return gta_diag - sqrt(distance2(traj_point, grid_point));
 }
 
 real weight_dist2(rvec traj_point, rvec grid_point) {
-    return llt_diag2 - distance2(traj_point, grid_point);
+    return gta_diag2 - distance2(traj_point, grid_point);
 }
 
 
-void llt_grid_area(const char *traj_fname, const char *ndx_fname, 
+void gta_grid_area(const char *traj_fname, const char *ndx_fname, 
     real cell_width, real (*fweight)(rvec, rvec), output_env_t *oenv, struct tessellated_grid *grid) {
     rvec **pre_x, **x;
     matrix *box;
@@ -53,7 +53,7 @@ void llt_grid_area(const char *traj_fname, const char *ndx_fname,
         x = pre_x;
     }
 
-    f_llt_grid_area(x, nframes, natoms, cell_width, fweight, grid);
+    f_gta_grid_area(x, nframes, natoms, cell_width, fweight, grid);
 
     // free memory
     for(int i = 0; i < nframes; ++i) {
@@ -63,7 +63,7 @@ void llt_grid_area(const char *traj_fname, const char *ndx_fname,
 }
 
 
-void f_llt_grid_area(rvec **x, int nframes, int natoms, 
+void f_gta_grid_area(rvec **x, int nframes, int natoms, 
     real cell_width, real (*fweight)(rvec, rvec), struct tessellated_grid *grid) {
     construct_grid(x, nframes, natoms, cell_width, grid);
 
@@ -106,7 +106,7 @@ void construct_grid(rvec **x, int nframes, int natoms, real cell_width, struct t
     grid->dimx = dimx, grid->dimy = dimy, grid->dimz = dimz;
     grid->cell_width = cell_width;
     grid->minx = minx, grid->miny = miny, grid->minz = minz;
-#ifdef LLT_DEBUG
+#ifdef GTA_DEBUG
     print_log("maxx = %f, maxy = %f, maxz = %f\n", maxx, maxy, maxz);
 #endif
 }
@@ -119,8 +119,8 @@ void load_grid(rvec **x, int nframes, int natoms, real (*fweight)(rvec, rvec), s
     real cell_width = grid->cell_width;
     real minx = grid->minx, miny = grid->miny, minz = grid->minz;
 
-    llt_diag2 = 3 * cell_width * cell_width;
-    llt_diag = sqrt(llt_diag2);
+    gta_diag2 = 3 * cell_width * cell_width;
+    gta_diag = sqrt(gta_diag2);
 
     rvec grid_point;
     int xi, yi, zi;
@@ -208,7 +208,7 @@ void tessellate_grid(struct tessellated_grid *grid) {
     };
     rvec ab, ac, ad, cpr;
 
-#ifdef LLT_DEBUG
+#ifdef GTA_DEBUG
             print_log("Corner height indices:\n");
 #endif
 
@@ -222,7 +222,7 @@ void tessellate_grid(struct tessellated_grid *grid) {
                 continue;
             }
 
-#ifdef LLT_DEBUG
+#ifdef GTA_DEBUG
             print_log("Cell [%d][%d]: %d %d %d %d\n", 
                 x, y, i_heights[0], i_heights[1], i_heights[2], i_heights[3]);
 #endif

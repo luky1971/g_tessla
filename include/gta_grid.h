@@ -9,8 +9,8 @@
  * and including many others, as listed at http://www.gromacs.org.
  */
 
-#ifndef LLT_GRID_H
-#define LLT_GRID_H
+#ifndef GTA_GRID_H
+#define GTA_GRID_H
 
 #include "vec.h"
 #ifdef GRO_V5
@@ -49,20 +49,20 @@ real weight_dist2(rvec traj_point, rvec grid_point);
 /***/
 
 
-void llt_grid_area(const char *traj_fname, const char *ndx_fname, 
+void gta_grid_area(const char *traj_fname, const char *ndx_fname, 
     real cell_width, real (*fweight)(rvec, rvec), output_env_t *oenv, struct tessellated_grid *grid);
-/* Reads a trajectory file and then calculates approximate surface area (see the f_llt_grid_area function below).
+/* Reads a trajectory file and then calculates approximate surface area (see the f_gta_grid_area function below).
  * If ndx_fname is not null, only a selection within the trajectory will be included in the grid.
  * output_env_t *oenv is needed for reading trajectory files.
  * You can initialize one using output_env_init() in Gromacs's oenv.h.
  * Memory is allocated for arrays in grid. Call free_grid when done.
  */
 
-void f_llt_grid_area(rvec **x, int nframes, int natoms, 
+void f_gta_grid_area(rvec **x, int nframes, int natoms, 
     real cell_width, real (*fweight)(rvec, rvec), struct tessellated_grid *grid);
 /* Calculates the approximate surface area of a trajectory by tessellating the coordinates in a 3D grid.
  * Stores grid and area information in tessellated_grid *grid.
- * Call this if you have already read the trajectory (otherwise call llt_grid_area above).
+ * Call this if you have already read the trajectory (otherwise call gta_grid_area above).
  * cell_width is the width of each grid cell. It should be high enough so that there's no gaps (empty cells) within the system of interest.
  * fweight is the function that will be used for calculating the weight of each grid point - trajectory point pair.
  * You can use one of the weight functions above for fweight or your own weight function.
@@ -97,4 +97,4 @@ void print_grid(struct tessellated_grid *grid, const char *fname);
 
 void free_grid(struct tessellated_grid *grid);
 
-#endif // LLT_GRID_H
+#endif // GTA_GRID_H

@@ -9,14 +9,14 @@
  * and including many others, as listed at http://www.gromacs.org.
  */
 
-#include "llt_tri.h"
+#include "gta_tri.h"
 
 #include <float.h>
 #include <string.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#ifdef LLT_BENCH
+#ifdef GTA_BENCH
 #include <time.h>
 #endif
 #include "gkut_io.h"
@@ -38,7 +38,7 @@ void print_dtrifiles(   const struct dTriangulation *tri,
                         const char *ele_name);
 
 
-void llt_delaunay_area( const char *traj_fname, 
+void gta_delaunay_area( const char *traj_fname, 
                         const char *ndx_fname, 
                         output_env_t *oenv, 
                         real corr, 
@@ -67,7 +67,7 @@ void llt_delaunay_area( const char *traj_fname,
         x = pre_x;
     }
 
-#ifdef LLT_BENCH
+#ifdef GTA_BENCH
     clock_t start = clock();
 #endif
 
@@ -82,14 +82,14 @@ void llt_delaunay_area( const char *traj_fname,
     dtinit(); // Initialize the delaunay triangulator
     snew(areas->area, areas->nframes);
     snew(areas->area2Dbox, areas->nframes);
-    if(flags & LLT_2D)  snew(areas->area2D, areas->nframes);
+    if(flags & GTA_2D)  snew(areas->area2D, areas->nframes);
 
-    if(flags & LLT_CORRECT) { // add correction for periodic bounds
+    if(flags & GTA_CORRECT) { // add correction for periodic bounds
         print_log("Triangulating and correcting %d frames...\n", areas->nframes);
 
 #pragma omp parallel for shared(areas,x,flags)
         for(int fr = 0; fr < areas->nframes; ++fr) {
-#if defined _OPENMP && defined LLT_DEBUG
+#if defined _OPENMP && defined GTA_DEBUG
             print_log("%d threads triangulating.\n", omp_get_num_threads());
 #endif
             // Calculate number of edge points
@@ -260,7 +260,7 @@ void llt_delaunay_area( const char *traj_fname,
             sfree(x_min_inds);
             sfree(x_max_inds);
 
-    // #ifdef LLT_DEBUG
+    // #ifdef GTA_DEBUG
     //         FILE *f = fopen("points.txt", "w");
 
     //         for(int j = 0; j < n; ++j) {
@@ -275,7 +275,7 @@ void llt_delaunay_area( const char *traj_fname,
 
             // Calculate area including added edge and corner points
             real *a2D = NULL;
-            if(flags & LLT_2D)  a2D = &(areas->area2D[fr]);
+            if(flags & GTA_2D)  a2D = &(areas->area2D[fr]);
             delaunay_surface_area(x[fr], box[fr], n, flags, a2D, &(areas->area[fr]));
 
             sfree(x[fr]);
@@ -286,7 +286,7 @@ void llt_delaunay_area( const char *traj_fname,
 
 #pragma omp parallel for shared(areas,x,flags)
         for(int fr = 0; fr < areas->nframes; ++fr) {
-#if defined _OPENMP && defined LLT_DEBUG
+#if defined _OPENMP && defined GTA_DEBUG
             print_log("%d threads triangulating.\n", omp_get_num_threads());
 #endif
             
@@ -302,7 +302,7 @@ void llt_delaunay_area( const char *traj_fname,
             areas->area2Dbox[fr] = box[fr][0][0] * box[fr][1][1];
 
             real *a2D = NULL;
-            if(flags & LLT_2D)  a2D = &(areas->area2D[fr]);
+            if(flags & GTA_2D)  a2D = &(areas->area2D[fr]);
             delaunay_surface_area(x[fr], box[fr], areas->natoms, flags, a2D, &(areas->area[fr]));
             sfree(x[fr]);
         }
@@ -311,7 +311,7 @@ void llt_delaunay_area( const char *traj_fname,
     sfree(x);
     sfree(box);
 
-#ifdef LLT_BENCH
+#ifdef GTA_BENCH
     clock_t clocks = clock() - start;
     print_log("Triangulation took %d clocks, %f seconds.\n", 
         clocks, (float)clocks/CLOCKS_PER_SEC);
@@ -341,7 +341,7 @@ void delaunay_surface_area( const rvec *x,
     // triangulate
     dtriangulate(&tri);
 
-    if(flags & LLT_PRINT) { // print triangle data to files that can be viewed with triangle's 'showme' program
+    if(flags & GTA_PRINT) { // print triangle data to files that can be viewed with triangle's 'showme' program
         char fname1[50], fname2[50];
         sprintf(fname1, "triangles%d.node", iter);
         sprintf(fname2, "triangles%d.ele", iter);
