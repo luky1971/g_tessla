@@ -48,6 +48,8 @@ void gta_delaunay_area( const char *traj_fname,
  * If ndx_fname is not null, only a selection within the trajectory will be tessellated.
  * output_env_t *oenv is needed for reading trajectory files.
  * You can initialize one using output_env_init() in Gromacs's oenv.h.
+ * nthreads is the number of threads to be used if ensemble_comp was built using openmp.
+ * nthreads <= 0 will use all available threads.
  * Memory is allocated for arrays in the tri_area struct. Call free_tri_area when done.
  * See above for flags.
  */

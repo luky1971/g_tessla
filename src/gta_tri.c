@@ -74,7 +74,7 @@ void gta_delaunay_area( const char *traj_fname,
 #ifdef _OPENMP
     if(nthreads > 0)
         omp_set_num_threads(nthreads);
-    if(nthreads > 1 || nthreads < 0)
+    if(nthreads > 1 || nthreads <= 0)
         print_log("Triangulation will be parallelized.\n");
 #endif
 
