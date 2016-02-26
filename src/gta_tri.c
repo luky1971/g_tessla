@@ -25,26 +25,26 @@
 #include "delaunay_tri.h"
 
 
-void print_triangulation3D( const rvec *x, 
-                            matrix box, 
-                            const struct dTriangulation *tri, 
-                            int modelnum, 
-                            const char *fname);
+void print_triangulation3D(const rvec *x, 
+                           matrix box, 
+                           const struct dTriangulation *tri, 
+                           int modelnum, 
+                           const char *fname);
 /* Prints a pdb file with connections between the triangulated atoms.
  */
 
-void print_dtrifiles(   const struct dTriangulation *tri, 
-                        const char *node_name, 
-                        const char *ele_name);
+void print_dtrifiles(const struct dTriangulation *tri, 
+                     const char *node_name, 
+                     const char *ele_name);
 
 
-void gta_delaunay_area( const char *traj_fname, 
-                        const char *ndx_fname, 
-                        output_env_t *oenv, 
-                        real corr, 
-                        int nthreads, 
-                        struct tri_area *areas, 
-                        unsigned char flags) {
+void tessellate_area(const char *traj_fname, 
+                     const char *ndx_fname, 
+                     output_env_t *oenv, 
+                     real corr, 
+                     int nthreads, 
+                     struct tri_area *areas, 
+                     unsigned char flags) {
     rvec **pre_x, **x;
     matrix *box;
 
@@ -318,12 +318,12 @@ void gta_delaunay_area( const char *traj_fname,
 #endif
 }
 
-void delaunay_surface_area( const rvec *x,
-                            matrix box, 
-                            int natoms, 
-                            unsigned char flags,
-                            real *a2D,
-                            real *a3D) {
+void delaunay_surface_area(const rvec *x,
+                           matrix box, 
+                           int natoms, 
+                           unsigned char flags,
+                           real *a2D,
+                           real *a3D) {
     static int iter = 0;
 
     struct dTriangulation tri;
@@ -402,11 +402,11 @@ void delaunay_surface_area( const rvec *x,
 }
 
 
-void print_triangulation3D( const rvec *x, 
-                            matrix box, 
-                            const struct dTriangulation *tri, 
-                            int modelnum, 
-                            const char *fname) {
+void print_triangulation3D(const rvec *x, 
+                           matrix box, 
+                           const struct dTriangulation *tri, 
+                           int modelnum, 
+                           const char *fname) {
     FILE *pdb = fopen(fname, "a");
 
     if(box) {
@@ -465,9 +465,9 @@ void print_areas(const char *fname, const struct tri_area *areas) {
     print_log("Surface areas saved to %s\n", fname);
 }
 
-void print_dtrifiles(   const struct dTriangulation *tri, 
-                        const char *node_name, 
-                        const char *ele_name) {
+void print_dtrifiles(const struct dTriangulation *tri, 
+                     const char *node_name, 
+                     const char *ele_name) {
     // print points to node file
     FILE *node = fopen(node_name, "w");
 

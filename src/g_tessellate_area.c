@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
                             | ((int)a2D * GTA_2D) 
                             | ((int)print * GTA_PRINT);
         
-        gta_delaunay_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, corr, nthreads, &areas, flags);
+        tessellate_area(fnames[efT_TRAJ], fnames[efT_NDX], &oenv, corr, nthreads, &areas, flags);
 
         print_areas(fnames[efT_OUTDAT], &areas);
 

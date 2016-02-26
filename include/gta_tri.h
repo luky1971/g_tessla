@@ -37,13 +37,13 @@ struct tri_area {
 };
 
 
-void gta_delaunay_area( const char *traj_fname, 
-                        const char *ndx_fname, 
-                        output_env_t *oenv, 
-                        real corr, 
-                        int nthreads, 
-                        struct tri_area *areas, 
-                        unsigned char flags);
+void tessellate_area(const char *traj_fname, 
+                     const char *ndx_fname, 
+                     output_env_t *oenv, 
+                     real corr, 
+                     int nthreads, 
+                     struct tri_area *areas, 
+                     unsigned char flags);
 /* Reads a trajectory file and tessellates all of its frames using delaunay triangulation.
  * If ndx_fname is not null, only a selection within the trajectory will be tessellated.
  * output_env_t *oenv is needed for reading trajectory files.
@@ -54,12 +54,12 @@ void gta_delaunay_area( const char *traj_fname,
  * See above for flags.
  */
 
-void delaunay_surface_area( const rvec *x, 
-                            matrix box, 
-                            int natoms, 
-                            unsigned char flags,
-                            real *a2D,
-                            real *a3D);
+void delaunay_surface_area(const rvec *x, 
+                           matrix box, 
+                           int natoms, 
+                           unsigned char flags,
+                           real *a2D,
+                           real *a3D);
 /* Tessellates the given array of coordinates using delaunay triangulation 
  * and calculates 2D and 3D area, stored in a2D and a3D.
  * a2D and/or a3D can be NULL.

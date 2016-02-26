@@ -55,13 +55,13 @@ static bool ccw(const struct vert *a,
 static bool rightOf(const struct vert *x, 
                     const struct vert *ea, 
                     const struct vert *eb);
-static bool leftOf( const struct vert *x, 
-                    const struct vert *ea, 
-                    const struct vert *eb);
-static bool inCircle(   const struct vert *a, 
-                        const struct vert *b, 
-                        const struct vert *c, 
-                        const struct vert *d);
+static bool leftOf(const struct vert *x, 
+                   const struct vert *ea, 
+                   const struct vert *eb);
+static bool inCircle(const struct vert *a, 
+                     const struct vert *b, 
+                     const struct vert *c, 
+                     const struct vert *d);
 
 static void deleteAdj(struct vert *v);
 
@@ -73,10 +73,10 @@ static void connectVerts(struct vert *a, struct vert *b);
 static void cutVerts(struct vert *a, struct vert *b);
 
 static struct vert *first(const struct vert *vi);
-static struct vert *pred(   const struct vert *vi, 
-                            const struct vert *vj);
-static struct vert *succ(   const struct vert *vi, 
-                            const struct vert *vj);
+static struct vert *pred(const struct vert *vi, 
+                         const struct vert *vj);
+static struct vert *succ(const struct vert *vi, 
+                         const struct vert *vj);
 
 static void lct(struct vert *lrightmost, 
                 struct vert *rleftmost, 
@@ -88,11 +88,11 @@ static void uct(struct vert *lrightmost,
                 struct vert **uctleft, 
                 struct vert **uctright);
 
-static void ord_dtriangulate(   struct vert *v, 
-                                int ia, 
-                                int ib, 
-                                struct vert **leftmost, 
-                                struct vert **rightmost);
+static void ord_dtriangulate(struct vert *v, 
+                             int ia, 
+                             int ib, 
+                             struct vert **leftmost, 
+                             struct vert **rightmost);
 
 // We are not liable for any lethal or non-lethal harm caused to you by this function. 
 // Be warned.
@@ -123,9 +123,9 @@ int compareVerts(const void *a, const void *b) {
 }
 
 
-static inline bool ccw( const struct vert *a, 
-                        const struct vert *b, 
-                        const struct vert *c) {
+static inline bool ccw(const struct vert *a, 
+                       const struct vert *b, 
+                       const struct vert *c) {
     // dtreal xa = XX(a);
     // dtreal ya = YY(a);
     // dtreal xb = XX(b);
@@ -138,15 +138,15 @@ static inline bool ccw( const struct vert *a,
     return orient2d(a->coord, b->coord, c->coord) > 0.0;
 }
 
-static bool rightOf(const struct vert *x, 
-                    const struct vert *ea, 
-                    const struct vert *eb) {
+static inline bool rightOf(const struct vert *x, 
+                           const struct vert *ea, 
+                           const struct vert *eb) {
     return ccw(x, eb, ea);
 }
 
-static bool leftOf( const struct vert *x, 
-                    const struct vert *ea, 
-                    const struct vert *eb) {
+static inline bool leftOf(const struct vert *x, 
+                          const struct vert *ea, 
+                          const struct vert *eb) {
     return ccw(x, ea, eb);
 }
 
@@ -288,8 +288,8 @@ static inline struct vert *first(const struct vert *vi) {
     return NULL;
 }
 
-static struct vert *pred(   const struct vert *vi, 
-                            const struct vert *vj) {
+static struct vert *pred(const struct vert *vi, 
+                         const struct vert *vj) {
     if(vi && vj) {
         struct vertNode *vn = vi->adj;
         if(vn) {
@@ -310,8 +310,8 @@ static struct vert *pred(   const struct vert *vi,
     return NULL;
 }
 
-static struct vert *succ(   const struct vert *vi, 
-                            const struct vert *vj) {
+static struct vert *succ(const struct vert *vi, 
+                         const struct vert *vj) {
     if(vi && vj) {
         struct vertNode *vn = vi->adj;
         if(vn) {
@@ -508,11 +508,11 @@ void dtriangulate(struct dTriangulation *tri) {
 
 // triangulates given vertices assuming that they are lexicographically ordered
 // primarily by increasing x-coordinate and secondarily by increasing y-coordinate
-static void ord_dtriangulate(   struct vert *v, 
-                                int ia, 
-                                int ib, 
-                                struct vert **leftmost, 
-                                struct vert **rightmost) {
+static void ord_dtriangulate(struct vert *v, 
+                             int ia, 
+                             int ib, 
+                             struct vert **leftmost, 
+                             struct vert **rightmost) {
     if(ib - ia == 1) {
         // num points = 2. Handle this base case
         connectVerts(&v[ia], &v[ib]);
