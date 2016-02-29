@@ -40,14 +40,25 @@ struct tri_area {
 void tessellate_area(const char *traj_fname, 
                      const char *ndx_fname, 
                      output_env_t *oenv, 
-                     real corr, 
+                     real espace, 
                      int nthreads, 
                      struct tri_area *areas, 
                      unsigned char flags);
-/* Reads a trajectory file and tessellates all of its frames using delaunay triangulation.
+/* Reads a trajectory file and tessellates all of its frames.
  * If ndx_fname is not null, only a selection within the trajectory will be tessellated.
  * output_env_t *oenv is needed for reading trajectory files.
  * You can initialize one using output_env_init() in Gromacs's oenv.h.
+ * Calls the delaunay_tessellate function below.
+ */
+
+void delaunay_tessellate(rvec **x, 
+                         matrix *box, 
+                         real espace, 
+                         int nthreads, 
+                         struct tri_area *areas, 
+                         unsigned char flags);
+/* Tesssellates all of the frames in the given trajectory using delaunay triangulation.
+ * espace is the spacing of the edge correction point intervals if using the GTA_CORRECT flag.
  * nthreads is the number of threads to be used if ensemble_comp was built using openmp.
  * nthreads <= 0 will use all available threads.
  * Memory is allocated for arrays in the tri_area struct. Call free_tri_area when done.
@@ -57,8 +68,8 @@ void tessellate_area(const char *traj_fname,
 void delaunay_surface_area(const rvec *x, 
                            matrix box, 
                            int natoms, 
-                           unsigned char flags,
-                           real *a2D,
+                           unsigned char flags, 
+                           real *a2D, 
                            real *a3D);
 /* Tessellates the given array of coordinates using delaunay triangulation 
  * and calculates 2D and 3D area, stored in a2D and a3D.

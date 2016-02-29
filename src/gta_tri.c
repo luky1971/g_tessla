@@ -41,7 +41,7 @@ void print_dtrifiles(const struct dTriangulation *tri,
 void tessellate_area(const char *traj_fname, 
                      const char *ndx_fname, 
                      output_env_t *oenv, 
-                     real corr, 
+                     real espace, 
                      int nthreads, 
                      struct tri_area *areas, 
                      unsigned char flags) {
@@ -67,6 +67,22 @@ void tessellate_area(const char *traj_fname,
         x = pre_x;
     }
 
+    delaunay_tessellate(x, box, espace, nthreads, areas, flags);
+
+    for(int i = 0; i < areas->nframes; ++i) {
+        sfree(x[i]);
+    }
+    sfree(x);
+    sfree(box);
+}
+
+
+void delaunay_tessellate(rvec **x, 
+                         matrix *box, 
+                         real espace, 
+                         int nthreads, 
+                         struct tri_area *areas, 
+                         unsigned char flags) {
 #ifdef GTA_BENCH
     clock_t start = clock();
 #endif
@@ -93,8 +109,8 @@ void tessellate_area(const char *traj_fname,
             print_log("%d threads triangulating.\n", omp_get_num_threads());
 #endif
             // Calculate number of edge points
-            int n_edge_x = box[fr][0][0] / corr;
-            int n_edge_y = box[fr][1][1] / corr;
+            int n_edge_x = box[fr][0][0] / espace;
+            int n_edge_y = box[fr][1][1] / espace;
 
             // Calculate box area
             areas->area2Dbox[fr] = box[fr][0][0] * box[fr][1][1];
@@ -221,7 +237,7 @@ void tessellate_area(const char *traj_fname,
             real dist1, dist2;
             for(int j = 0; j < n_edge_x; ++j) {
                 // Bottom edge
-                x[fr][n][XX] = j * corr + corr / 2; // Go to middle of interval
+                x[fr][n][XX] = j * espace + espace / 2; // Go to middle of interval
                 x[fr][n][YY] = 0;
                 // edge Z coord is distance-from-edge-weighted average between the Zs of the two points closest to the two edges of this axis
                 dist1 = x[fr][y_min_inds[j]][YY];
@@ -232,7 +248,7 @@ void tessellate_area(const char *traj_fname,
                 x[fr][n++][ZZ] = avg_z;
 
                 // Top edge
-                x[fr][n][XX] = j * corr + corr / 2;
+                x[fr][n][XX] = j * espace + espace / 2;
                 x[fr][n][YY] = box[fr][1][1];
                 x[fr][n++][ZZ] = avg_z;
             }
@@ -240,7 +256,7 @@ void tessellate_area(const char *traj_fname,
             for(int j = 0; j < n_edge_y; ++j) {
                 // Left edge
                 x[fr][n][XX] = 0;
-                x[fr][n][YY] = j * corr + corr / 2;
+                x[fr][n][YY] = j * espace + espace / 2;
                 
                 dist1 = x[fr][x_min_inds[j]][XX];
                 dist2 = box[fr][0][0] - x[fr][x_max_inds[j]][XX];
@@ -251,7 +267,7 @@ void tessellate_area(const char *traj_fname,
 
                 // Right edge
                 x[fr][n][XX] = box[fr][0][0];
-                x[fr][n][YY] = j * corr + corr / 2;
+                x[fr][n][YY] = j * espace + espace / 2;
                 x[fr][n++][ZZ] = avg_z;
             }
 
@@ -260,25 +276,23 @@ void tessellate_area(const char *traj_fname,
             sfree(x_min_inds);
             sfree(x_max_inds);
 
-    // #ifdef GTA_DEBUG
-    //         FILE *f = fopen("points.txt", "w");
+// #ifdef GTA_DEBUG
+//             FILE *f = fopen("points.txt", "w");
 
-    //         for(int j = 0; j < n; ++j) {
-    //             fprintf(f, "%d: %f\t%f\t%f\n", j, x[fr][j][XX], x[fr][j][YY], x[fr][j][ZZ]);
-    //         }
+//             for(int j = 0; j < n; ++j) {
+//                 fprintf(f, "%d: %f\t%f\t%f\n", j, x[fr][j][XX], x[fr][j][YY], x[fr][j][ZZ]);
+//             }
 
-    //         fclose(f);
+//             fclose(f);
 
-    //         print_log("Points saved to points.txt for debugging.\n");
-    //         exit(0);
-    // #endif
+//             print_log("Points saved to points.txt for debugging.\n");
+//             exit(0);
+// #endif
 
             // Calculate area including added edge and corner points
             real *a2D = NULL;
             if(flags & GTA_2D)  a2D = &(areas->area2D[fr]);
             delaunay_surface_area(x[fr], box[fr], n, flags, a2D, &(areas->area[fr]));
-
-            sfree(x[fr]);
         }
     }
     else { // triangulate without correction for periodic bounds
@@ -304,12 +318,8 @@ void tessellate_area(const char *traj_fname,
             real *a2D = NULL;
             if(flags & GTA_2D)  a2D = &(areas->area2D[fr]);
             delaunay_surface_area(x[fr], box[fr], areas->natoms, flags, a2D, &(areas->area[fr]));
-            sfree(x[fr]);
         }
     }
-
-    sfree(x);
-    sfree(box);
 
 #ifdef GTA_BENCH
     clock_t clocks = clock() - start;
@@ -317,6 +327,7 @@ void tessellate_area(const char *traj_fname,
         clocks, (float)clocks/CLOCKS_PER_SEC);
 #endif
 }
+
 
 void delaunay_surface_area(const rvec *x,
                            matrix box, 
