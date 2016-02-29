@@ -2,26 +2,26 @@
 
 g_tessellate_area calculates 3-d surface area using Delaunay tessellation.
 
-It reads in a trajectory file through the -f option (supported formats=xtc,trr,pdb).
-The set of points for tessellation, such as the coordinates of phosphorous atoms in a lipid bilayer, are specified using an index file by the -n option.
-Areas can be calculated individually for each frame in which case the output is dumped into an ASCII file specified by the -o option. 
+It reads in a trajectory file through the `-f` option (supported formats=xtc,trr,pdb).
+The set of points for tessellation, such as the coordinates of phosphorous atoms in a lipid bilayer, are specified using an index file by the `-n` option.
+Areas can be calculated individually for each frame in which case the output is dumped into an ASCII file specified by the `-o` option. 
 
 This code can also be used for calculating the surface areas of lipid bilayers.
 In such a calculation, the lipid bilayer normal is assumed to be parallel to the z-axis.
 This assumption is made to include in the surface area the space between the atoms lying at the periphery of the unit cell and the boundary of the unit cell.
 The correction is performed by inserting points at regular intervals along the edges of the simulation box.
-To use this correction, set the boolean -corr.
-You can also set -espace X, where X is the desired spacing in nanometers of the edge correction point intervals (default = 0.8).
+To use this correction, set the boolean `-corr`.
+You can also set `-espace X`, where X is the desired spacing in nanometers of the edge correction point intervals (default = 0.8).
 
-The -2d option will yield 2D projections on the XY plane - for a lipid bilayer perpendicular to the z-axis, the 2D projected area along with the -corr option will essentially yield the 2D area of the simulation cell.
+The `-2d` option will yield 2D projections on the XY plane - for a lipid bilayer perpendicular to the z-axis, the 2D projected area along with the -corr option will essentially yield the 2D area of the simulation cell.
 
-An alternative way to calculate lipid surface areas is to map the coordinates onto a weighted 3D grid, and tessellate the highest weight z-coordinates along the horizontal plane. The latter method is, however, still experimental and not supported. To use the experimental weighted grid method, set the -dense option.
+An alternative way to calculate lipid surface areas is to map the coordinates onto a weighted 3D grid, and tessellate the highest weight z-coordinates along the horizontal plane. The latter method is, however, still experimental and not supported. To use the experimental weighted grid method, set the `-dense` option.
 
-The tessellated surface can be visualized using the -print option. The resulting .node and .ele files are numbered by frame and can be viewed by Jonathan R. Shewchuck's program showme (found here: https://www.cs.cmu.edu/~quake/showme.html).
+The tessellated surface can be visualized using the `-print` option. The resulting .node and .ele files are numbered by frame and can be viewed by Jonathan R. Shewchuck's program showme (found here: https://www.cs.cmu.edu/~quake/showme.html).
 WARNING, the -print option produces a .node and .ele file for EVERY frame AND disables parallelization!
 (So don't be surprised when you come back hours later and see a hundred thousand new files in your current directory)
 
-If you build g_tessellate_area with OPENMP, you can set the number of threads to use with -nthreads X, where X is the number of threads to use. The default is to use the maximum number of cores available.
+If you build g_tessellate_area with OPENMP, you can set the number of threads to use with `-nthreads X`, where X is the number of threads to use. The default is to use the maximum number of cores available.
 
 ### INSTALLATION
 
