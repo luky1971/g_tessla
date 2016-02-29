@@ -7,7 +7,7 @@ The set of points for tessellation, such as the coordinates of phosphorous atoms
 Areas can be calculated individually for each frame in which case the output is dumped into an ASCII file specified by the -o option. 
 
 This code can also be used for calculating the surface areas of lipid bilayers.
-"In such a calculation, the lipid bilayer normal is assumed to be parallel to the z-axis.
+In such a calculation, the lipid bilayer normal is assumed to be parallel to the z-axis.
 This assumption is made to include in the surface area the space between the atoms lying at the periphery of the unit cell and the boundary of the unit cell.
 The correction is performed by inserting points at regular intervals along the edges of the simulation box.
 To use this correction, set the boolean -corr.
