@@ -465,11 +465,7 @@ void print_areas(const char *fname, const struct tri_area *areas) {
             sum += areas->area[i];
         }
     }
-
-    fprintf(f, "\n# Average surface area: %f\n", sum / areas->nframes);
     print_log("Average surface area: %f\n", sum / areas->nframes);
-
-    fprintf(f, "# Average area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
     print_log("Average area per particle: %f\n", (sum / areas->nframes) / areas->natoms);
 
     fclose(f);

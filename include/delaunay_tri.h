@@ -21,7 +21,7 @@
 
 #include "predicates.h"
 
-typedef REAL dtreal; // test performance and accuracy of double vs float
+typedef REAL dtreal;
 
 
 struct dTriangulation {
