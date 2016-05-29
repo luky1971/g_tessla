@@ -59,7 +59,7 @@ void delaunay_tessellate(rvec **x,
                          unsigned char flags);
 /* Tesssellates all of the frames in the given trajectory using delaunay triangulation.
  * espace is the spacing of the edge correction point intervals if using the GTA_CORRECT flag.
- * nthreads is the number of threads to be used if ensemble_comp was built using openmp.
+ * nthreads is the number of threads to be used if built with openmp.
  * nthreads <= 0 will use all available threads.
  * Memory is allocated for arrays in the tri_area struct. Call free_tri_area when done.
  * See above for flags.
