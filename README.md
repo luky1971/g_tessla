@@ -1,6 +1,6 @@
-### g_tessellate_area
+### g_tessla
 
-g_tessellate_area calculates 3-d surface area using Delaunay tessellation.
+g_tessla calculates 3-d surface area using Delaunay tessellation.
 
 It reads in a trajectory file through the `-f` option (supported formats=xtc,trr,pdb).
 The set of points for tessellation, such as the coordinates of phosphorous atoms in a lipid bilayer, are specified using an index file by the `-n` option.
@@ -21,7 +21,7 @@ The tessellated surface can be visualized using the `-print` option. The resulti
 WARNING, the -print option produces a .node and .ele file for EVERY frame AND disables parallelization!
 (So don't be surprised when you come back hours later and see a hundred thousand new files in your current directory)
 
-If you build g_tessellate_area with OPENMP, you can set the number of threads to use with `-nthreads X`, where X is the number of threads to use. The default is to use the maximum number of cores available.
+If you build g_tessla with OPENMP, you can set the number of threads to use with `-nthreads X`, where X is the number of threads to use. The default is to use the maximum number of cores available.
 
 ### INSTALLATION
 
@@ -30,7 +30,7 @@ Windows is not currently supported.
 
 1. Install Gromacs version 4.5.x or later from http://www.gromacs.org.
 
-2. `git clone` or otherwise obtain and `cd` to the 'g_tessellate_area' repository.
+2. `git clone` or otherwise obtain and `cd` to the 'g_tessla' repository.
 
 3. Run `sudo make install` with the necessary arguments for your environment (see below).
 
@@ -47,7 +47,7 @@ then you would run the following command:
 If you must run `make install` without sudo privileges, you will need to set the `INSTALL`
 variable to a path that you can write to. 
 The default install path is /usr/local/bin. Depending on your system and chosen installation directory,
-you may have to add g_tessellate_area to your PATH. 
+you may have to add g_tessla to your PATH. 
 
 If you are not using gcc, you will also need to set `CC` and `CXX`
 to your C compiler and C++ compiler commands respectively.
@@ -57,7 +57,7 @@ If you want to build without OpenMP, set `PARALLEL=0`. You can also add compilat
 ### Copyright 
 (c) 2016 Ahnaf Siddiqui and Sameer Varma 
 
-g_tessellate_area's implementation of Delaunay triangulation is based on the algorithms presented by 
+g_tessla's implementation of Delaunay triangulation is based on the algorithms presented by 
 
 Lee, D.T. and Schachter, B.J. Two algorithms for constructing a Delaunay triangulation.
 International Journal of Computer & Information Sciences 1980;9(3):219-242. 
@@ -67,11 +67,11 @@ and
 Guibas, L. and Stolfi, J. Primitives for the manipulation of general subdivisions and the computation of Voronoi.
 ACM Trans. Graph. 1985;4(2):74-123. 
 
-g_tessellate_area uses exact arithmetic routines and geometric predicates provided by 
+g_tessla uses exact arithmetic routines and geometric predicates provided by 
 
 Shewchuk, J.R. 1996. Routines for Arbitrary Precision Floating-point Arithmetic and Fast Robust Geometric Predicates.
 
-g_tessellate_area uses the GROMACS molecular simulation package API.  
+g_tessla uses the GROMACS molecular simulation package API.  
 Copyright (c) 1991-2000, University of Groningen, The Netherlands.  
 Copyright (c) 2001-2004, The GROMACS development team.  
 Copyright (c) 2013,2014, by the GROMACS development team,  

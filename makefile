@@ -42,17 +42,17 @@ MCFLAGS +='
 
 .PHONY: install clean
 
-$(BUILD)/g_tessellate_area: $(BUILD)/g_tessellate_area.o $(BUILD)/gta_tri.o $(BUILD)/gta_grid.o $(BUILD)/delaunay_tri.o
+$(BUILD)/g_tessla: $(BUILD)/g_tessla.o $(BUILD)/gta_tri.o $(BUILD)/gta_grid.o $(BUILD)/delaunay_tri.o
 	make CC=$(CC) CFLAGS=$(MCFLAGS) GROMACS=$(GROMACS) VGRO=$(VGRO) -C $(GKUT) \
 	&& make CC=$(CC) -C $(PRED) \
-	&& $(CC) $(CFLAGS) -o $(BUILD)/g_tessellate_area $(BUILD)/g_tessellate_area.o $(BUILD)/gta_tri.o $(BUILD)/gta_grid.o $(BUILD)/delaunay_tri.o \
+	&& $(CC) $(CFLAGS) -o $(BUILD)/g_tessla $(BUILD)/g_tessla.o $(BUILD)/gta_tri.o $(BUILD)/gta_grid.o $(BUILD)/delaunay_tri.o \
 	$(GKUT)/build/gkut_io.o $(GKUT)/build/gkut_log.o $(PRED)/predicates.o $(LINKGRO) $(LIBGRO) $(LIBS)
 
-install: $(BUILD)/g_tessellate_area
-	install $(BUILD)/g_tessellate_area $(INSTALL)
+install: $(BUILD)/g_tessla
+	install $(BUILD)/g_tessla $(INSTALL)
 
-$(BUILD)/g_tessellate_area.o: $(SRC)/g_tessellate_area.c $(INCLUDE)/gta_grid.h $(INCLUDE)/gta_tri.h
-	$(CC) $(CFLAGS) -o $(BUILD)/g_tessellate_area.o -c $(SRC)/g_tessellate_area.c \
+$(BUILD)/g_tessla.o: $(SRC)/g_tessla.c $(INCLUDE)/gta_grid.h $(INCLUDE)/gta_tri.h
+	$(CC) $(CFLAGS) -o $(BUILD)/g_tessla.o -c $(SRC)/g_tessla.c \
 	$(DEFV5) -I$(INCLUDE) $(INCGRO) -I$(GKUT)/include
 
 $(BUILD)/gta_tri.o: $(SRC)/gta_tri.c $(INCLUDE)/gta_tri.h $(INCLUDE)/delaunay_tri.h
@@ -69,4 +69,4 @@ $(BUILD)/delaunay_tri.o: $(SRC)/delaunay_tri.c $(INCLUDE)/delaunay_tri.h
 clean:
 	make clean -C $(GKUT) \
 	&& make clean -C $(PRED) \
-	&& rm -f $(BUILD)/*.o $(BUILD)/g_tessellate_area
+	&& rm -f $(BUILD)/*.o $(BUILD)/g_tessla

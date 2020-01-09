@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     const char *desc[] = {
-        "g_tessellate_area calculates 3-d surface area using Delaunay tessellation. \n",
+        "g_tessla calculates 3-d surface area using Delaunay tessellation. \n",
         "It reads in a trajectory file through the -f option (supported formats=xtc,trr,pdb). \n",
         "The set of points for tessellation, such as the coordinates of phosphorous atoms in a lipid bilayer, are specified using an index file by the -n option.\n",
         "Areas can be calculated individually for each frame in which case the output is dumped into an ASCII file specified by the -o option.\n\n",
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
         "(found here: https://www.cs.cmu.edu/~quake/showme.html)\n",
         "WARNING, the -print option produces a .node and .ele file for EVERY frame AND disables parallelization!\n",
         "(So don't be surprised when you come back hours later and see a hundred thousand new files in your current directory)\n\n",
-        "If you build g_tessellate_area with OPENMP, you can set the number of threads to use with -nthreads X,\n",
+        "If you build g_tessla with OPENMP, you can set the number of threads to use with -nthreads X,\n",
         "where X is the number of threads to use. The default is to use the maximum number of cores available.\n"
     };
 
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef GTA_BENCH
     clock_t clocks = clock() - start;
-    print_log("g_tessellate_area took %d clocks, %f seconds.\n", clocks, (float)clocks/CLOCKS_PER_SEC);
+    print_log("g_tessla took %d clocks, %f seconds.\n", clocks, (float)clocks/CLOCKS_PER_SEC);
 #endif
 
     close_log();
